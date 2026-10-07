@@ -6,7 +6,7 @@
 //! TOC path resolution, markup well-formedness, text/markup offset
 //! agreement, find bounds, and output size proportional to input size.
 
-use proptest::{arbitrary, collection, prelude::*};
+use proptest::{collection, prelude::*};
 
 use markview::doc::{self, Block, Document, Inline};
 use markview::find;
