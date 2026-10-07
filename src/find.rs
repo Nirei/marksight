@@ -95,7 +95,7 @@ pub fn active_range(
 ) -> Option<Range<usize>> {
     let active = active?;
     let m = matches.get(active)?;
-    (m.entry == entry).then(|| m.start..m.end)
+    (m.entry == entry).then_some(m.start..m.end)
 }
 
 #[cfg(test)]

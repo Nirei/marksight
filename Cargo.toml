@@ -13,9 +13,13 @@ readme = "README.md"
 exclude = ["/packaging", "/.github", "/fuzz"]
 
 [dependencies]
-gtk4 = { version = "0.11", features = ["v4_10"] }
+gtk = { package = "gtk4", version = "0.11", features = ["v4_10"], optional = true }
 pulldown-cmark = { version = "0.13", default-features = false, features = ["simd"] }
 notify = "8"
+
+[features]
+default = ["ui"]
+ui = ["dep:gtk"]
 
 [dev-dependencies]
 proptest = "1.11"
