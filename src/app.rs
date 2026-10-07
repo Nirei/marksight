@@ -518,6 +518,12 @@ impl App {
         self.state.borrow().doc.blocks.len()
     }
 
+    pub fn reload_path(&self, path: &Path) {
+        if self.state.borrow().path.as_deref() == Some(path) {
+            self.open_path(path);
+        }
+    }
+
     pub fn open_path(&self, path: &Path) {
         {
             let mut state = self.state.borrow_mut();
@@ -643,7 +649,7 @@ fn start_watcher(app: &Rc<App>, path: &Path) {
     let app_for_reload = app.clone();
     let watched = path.to_path_buf();
     let watcher = FileWatcher::new(path, move || {
-        app_for_reload.open_path(&watched);
+        app_for_reload.reload_path(&watched);
     });
     match watcher {
         Ok(watcher) => app.state.borrow_mut().watcher = Some(watcher),
