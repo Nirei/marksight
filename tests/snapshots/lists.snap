@@ -1,0 +1,101 @@
+=== paragraph
+text: Tight list:
+markup@0: Tight list:
+=== list start=- tight=true
+  --- item task=x
+    === paragraph
+    text: alpha
+    markup@0: alpha
+  --- item task=x
+    === paragraph
+    text: beta
+    markup@0: beta
+    === list start=- tight=true
+      --- item task=x
+        === paragraph
+        text: nested one
+        markup@0: nested one
+      --- item task=x
+        === paragraph
+        text: nested two
+        markup@0: nested two
+        === list start=- tight=true
+          --- item task=x
+            === paragraph
+            text: deeper
+            markup@0: deeper
+  --- item task=x
+    === paragraph
+    text: gamma
+    markup@0: gamma
+=== paragraph
+text: Loose list:
+markup@0: Loose list:
+=== list start=- tight=false
+  --- item task=x
+    === paragraph
+    text: first item
+    markup@0: first item
+  --- item task=x
+    === paragraph
+    text: second item
+    markup@0: second item
+=== paragraph
+text: Ordered from three:
+markup@0: Ordered from three:
+=== list start=3 tight=true
+  --- item task=x
+    === paragraph
+    text: three
+    markup@0: three
+  --- item task=x
+    === paragraph
+    text: four
+    markup@0: four
+  --- item task=x
+    === paragraph
+    text: five
+    markup@0: five
+=== paragraph
+text: Tasks:
+markup@0: Tasks:
+=== list start=- tight=true
+  --- item task=false
+    === paragraph
+    text: unchecked
+    markup@0: unchecked
+  --- item task=true
+    === paragraph
+    text: checked
+    markup@0: checked
+    === list start=- tight=true
+      --- item task=false
+        === paragraph
+        text: nested task
+        markup@0: nested task
+=== paragraph
+text: Item with multiple blocks:
+markup@0: Item with multiple blocks:
+=== list start=- tight=false
+  --- item task=x
+    === paragraph
+    text: intro paragraph
+    markup@0: intro paragraph
+    === code info=""
+    text: "code in item\n"
+    === quote kind=none
+      === paragraph
+      text: quote in item
+      markup@0: quote in item
+=== paragraph
+text: Definition-free list with links:
+markup@0: Definition-free list with links:
+=== list start=- tight=true
+  --- item task=x
+    === paragraph
+    text: docs
+    markup@0: <a href="https://example.com/docs">docs</a>
+  --- item task=x
+    === paragraph
+    text: repo
+    markup@0: <a href="https://example.com/repo">repo</a>

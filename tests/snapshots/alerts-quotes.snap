@@ -1,0 +1,32 @@
+=== quote kind=none
+  === paragraph
+  text: A plain quote spanning lazy continuation lines.
+  markup@0: A plain quote spanning lazy continuation lines.
+=== quote kind=Note
+  === paragraph
+  text: Useful information.
+  markup@0: Useful information.
+=== quote kind=Tip
+  === paragraph
+  text: Helpful advice.
+  markup@0: Helpful advice.
+=== quote kind=Important
+  === paragraph
+  text: Read this carefully.
+  markup@0: Read this carefully.
+=== quote kind=Warning
+  === paragraph
+  text: Something risky.
+  markup@0: Something risky.
+=== quote kind=Caution
+  === paragraph
+  text: Negative consequences.
+  markup@0: Negative consequences.
+=== quote kind=none
+  === paragraph
+  text: Outer containing > [!TIP] text and
+  markup@0: Outer containing &gt; [!TIP] text and
+  === quote kind=none
+    === paragraph
+    text: nested inner quote with two lines.
+    markup@0: nested inner quote with two lines.

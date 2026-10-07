@@ -1,0 +1,17 @@
+=== code info="rust"
+text: "fn main() {\n    println!(\"hello < world & things\");\n}\n"
+=== paragraph
+text: Fenced with language and  content:
+markup@0: Fenced with language and  content:
+=== code info="html"
+text: "<div class=\"x\">&amp;</div>\n"
+=== paragraph
+text: Indented code:
+markup@0: Indented code:
+=== code info=""
+text: "four spaces back\nsecond line\n"
+=== paragraph
+text: Unclosed fence runs to end of file:
+markup@0: Unclosed fence runs to end of file:
+=== code info=""
+text: "still code\n"

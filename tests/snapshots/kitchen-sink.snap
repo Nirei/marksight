@@ -1,0 +1,45 @@
+=== heading 1
+text: markview kitchen sink
+markup@0: markview kitchen sink
+=== paragraph
+text: Everything at once, including raw HTML that must vanish:
+markup@0: Everything at once, including raw HTML that must vanish:
+=== paragraph
+text: Text with inline html dropped in place.
+markup@0: Text with inline html dropped in place.
+=== heading 2
+text: Structure
+markup@0: Structure
+=== quote kind=none
+  === paragraph
+  text: Quotes with emphasis and code spans across lines.
+  markup@0: Quotes with <b>emphasis</b> and <tt>code spans</tt> across lines.
+=== list start=- tight=true
+  --- item task=x
+    === paragraph
+    text: lists with links
+    markup@0: lists with <a href="https://example.com">links</a>
+  --- item task=x
+    === paragraph
+    text: and strikethrough
+    markup@0: and <s>strikethrough</s>
+=== list start=1 tight=true
+  --- item task=x
+    === paragraph
+    text: ordered
+    markup@0: ordered
+  --- item task=x
+    === paragraph
+    text: items
+    markup@0: items
+=== table aligns=[none,none]
+  row: a|a ; b|b
+  row: 1|1 ; 2|2
+=== rule
+=== paragraph
+text: Final paragraph with a footnote1 and bold code mix.
+markup@0: Final paragraph with a footnote<a href="#fn-1"><sup>1</sup></a> and <b>bold </b><b><tt>code</tt></b><b> mix</b>.
+--- footnote 1 [^k]
+=== paragraph
+text: the kitchen sink footnote
+markup@0: the kitchen sink footnote

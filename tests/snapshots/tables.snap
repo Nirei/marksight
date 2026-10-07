@@ -1,0 +1,10 @@
+=== table aligns=[left,center,right,none]
+  row: Left|Left ; Center|Center ; Right|Right ; Default|Default
+  row: a|a ; b|b ; c|c ; d|d
+  row: longer cell|longer cell ; x|x ; y|y ; z|z
+  row: escaped | pipe|escaped | pipe ; em|<i>em</i> ; code|<tt>code</tt> ; link|<a href="https://example.com/t">link</a>
+=== paragraph
+text: Header-only table:
+markup@0: Header-only table:
+=== table aligns=[none,none]
+  row: only|only ; head|head

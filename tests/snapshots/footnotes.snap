@@ -1,0 +1,17 @@
+=== paragraph
+text: A reference before its definition2 and one after3, plus an undefined[^ghost] reference and a multi-block one1.
+markup@0: A reference before its definition<a href="#fn-2"><sup>2</sup></a> and one after<a href="#fn-3"><sup>3</sup></a>, plus an undefined[^ghost] reference and a multi-block one<a href="#fn-1"><sup>1</sup></a>.
+--- footnote 1 [^multi]
+=== paragraph
+text: The definition continued on the next line.
+markup@0: The definition continued on the next line.
+=== code info="rust"
+text: "let code = \"in footnote\";\n"
+--- footnote 2 [^first]
+=== paragraph
+text: defined first in source order
+markup@0: defined first in source order
+--- footnote 3 [^second]
+=== paragraph
+text: defined last
+markup@0: defined last

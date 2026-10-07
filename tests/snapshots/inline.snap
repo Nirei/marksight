@@ -1,0 +1,17 @@
+=== paragraph
+text: Plain text with bold, italic, both, struck and code.
+markup@0: Plain text with <b>bold</b>, <i>italic</i>, <b><i>both</i></b>, <s>struck</s> and <tt>code</tt>.
+=== paragraph
+text: Entities stay literal: a < b & c > d, "quotes" and 'apostrophes'.
+markup@0: Entities stay literal: a &lt; b &amp; c &gt; d, "quotes" and 'apostrophes'.
+=== paragraph
+text: A link and a reference link plus an autolink https://example.com/auto.
+markup@0: A <a href="https://example.com/target?a=1&amp;b=2" title="the title">link</a> and a <a href="https://example.com/referenced" title="ref title">reference link</a> plus an autolink <a href="https://example.com/auto">https://example.com/auto</a>.
+=== paragraph
+text: Nesting: bold with italic inside and code too plus link with emphasis.
+markup@0: Nesting: <b>bold with </b><b><i>italic inside</i></b><b> and </b><b><tt>code too</tt></b> plus <a href="https://example.com/inner"><i>link with emphasis</i></a>.
+=== paragraph
+text: Line breaks: soft break joins, and a hard
+break stays.
+markup@0: Line breaks: soft break joins, and a hard
+break stays.
