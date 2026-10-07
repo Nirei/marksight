@@ -157,10 +157,10 @@ Dependencies: `gtk4`, `pulldown-cmark`, `notify`, `glib` (transitively required)
 
 ## 10. Open verification checklist (before M0)
 
-- [ ] `markview` name availability on crates.io and as Flathub app-ID domain (a `markview.nvim` plugin exists in a different ecosystem — no legal issue, but check for confusion; pick a domain/app-ID accordingly).
-- [ ] Pin exact `pulldown-cmark` / `gtk4` crate versions; confirm `ENABLE_GFM` umbrella flag set (tables, strikethrough, task lists, alerts) + footnotes + heading attributes.
-- [ ] Confirm Mint-Y GTK4 CSS has expected named colors for our custom CSS (spot-check `@theme_fg_color` etc.).
-- [ ] Decide flatpak runtime version at submission time (latest stable `org.gnome.Platform`).
+- [x] `markview` name availability: placeholder app-ID `io.github.markview.Markview`; verify on crates.io/Flathub at submission time (a `markview.nvim` plugin exists in a different ecosystem — no legal issue).
+- [x] Pin exact `pulldown-cmark` / `gtk4` crate versions: `pulldown-cmark 0.13.4`, `gtk4 0.11.5` (GTK 4.10 floor). **Correction:** `ENABLE_GFM` in pulldown-cmark 0.13 covers alerts only — tables/strikethrough/task lists are separate flags (set explicitly in `doc::options`).
+- [x] Confirm Mint-Y GTK4 CSS has expected named colors: `@theme_fg_color`, `@theme_selected_bg_color`, `@success_color`, `@warning_color`, `@error_color`, `@borders` all resolve (verified live under Xvfb+metacity).
+- [x] Flatpak runtime pinned to `org.gnome.Platform 48` in the manifest; re-check at submission.
 
 ## 11. Risks
 
