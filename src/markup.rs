@@ -269,7 +269,11 @@ fn walk_into(inlines: &[Inline], walker: &mut Walker<'_>) {
             Inline::Image { url, alt, title } => {
                 walker.boundary();
                 walker.push_chars(alt);
-                walker.images.push(ImageInfo { url: url.clone(), alt: alt.clone(), title: title.clone() });
+                walker.images.push(ImageInfo {
+                    url: url.clone(),
+                    alt: alt.clone(),
+                    title: title.clone(),
+                });
             }
             Inline::FootnoteRef { label } => walker.footnote_ref(label),
         }

@@ -1,6 +1,5 @@
 //! Binary entry point: hand-rolled CLI around the GTK application.
 
-
 use std::process::ExitCode;
 
 fn main() -> ExitCode {

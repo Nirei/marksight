@@ -28,6 +28,7 @@ pub const APP_ID: &str = "io.github.markview.Markview";
 
 const CSS: &str = include_str!("../resources/markview.css");
 const FIND_DEBOUNCE: Duration = Duration::from_millis(120);
+const FIND_POLL: Duration = Duration::from_millis(40);
 const LOAD_POLL: Duration = Duration::from_millis(40);
 
 enum LoadMsg {
@@ -61,7 +62,7 @@ struct State {
     active: Option<usize>,
     watcher: Option<FileWatcher>,
     toc_targets: Vec<gtk::Widget>,
-    find_timer: Option<glib::SourceId>,
+    find_pending: Option<std::time::Instant>,
 }
 
 impl State {
@@ -75,12 +76,12 @@ impl State {
             active: None,
             watcher: None,
             toc_targets: Vec::new(),
-            find_timer: None,
+            find_pending: None,
         }
     }
 }
 
-struct App {
+pub struct App {
     ui: Ui,
     state: RefCell<State>,
     loader: mpsc::Sender<LoadMsg>,
@@ -107,7 +108,7 @@ pub fn run() -> glib::ExitCode {
     app.run()
 }
 
-fn ensure_window(app: &gtk::Application) -> Rc<App> {
+pub fn ensure_window(app: &gtk::Application) -> Rc<App> {
     let existing = INSTANCE.with(|cell| cell.borrow().clone());
     if let Some(application) = existing {
         return application;
@@ -122,6 +123,20 @@ fn ensure_window(app: &gtk::Application) -> Rc<App> {
             match msg {
                 LoadMsg::Loaded { path, doc } => apply_doc(&poll_app, &path, doc),
                 LoadMsg::Failed { path, message } => show_error(&poll_app, &path, &message),
+            }
+        }
+        glib::ControlFlow::Continue
+    });
+
+    let find_app = application.clone();
+    glib::timeout_add_local(FIND_POLL, move || {
+        let pending = find_app.state.borrow_mut().find_pending.take();
+        if let Some(at) = pending {
+            if at.elapsed() < FIND_DEBOUNCE {
+                find_app.state.borrow_mut().find_pending = Some(at);
+            } else {
+                let needle = find_app.ui.search_entry.text().to_string();
+                run_find(&find_app, &needle);
             }
         }
         glib::ControlFlow::Continue
@@ -152,7 +167,10 @@ fn build(app: &gtk::Application, loader: mpsc::Sender<LoadMsg>) -> Rc<App> {
     section.append(Some("About markview"), Some("app.about"));
     section.append(Some("Quit"), Some("app.quit"));
     menu.append_section(None, &section);
-    let menu_button = gtk::MenuButton::builder().icon_name("open-menu-symbolic").menu_model(&menu).build();
+    let menu_button = gtk::MenuButton::builder()
+        .icon_name("open-menu-symbolic")
+        .menu_model(&menu)
+        .build();
 
     let title_label = gtk::Label::new(Some("markview"));
     title_label.set_css_classes(&["mv-title"]);
@@ -248,7 +266,11 @@ fn build(app: &gtk::Application, loader: mpsc::Sender<LoadMsg>) -> Rc<App> {
         path_label,
     };
 
-    let application = App { ui, state: RefCell::new(State::new()), loader };
+    let application = App {
+        ui,
+        state: RefCell::new(State::new()),
+        loader,
+    };
     let shared = Rc::new(application);
     wire(&shared, app, &open_button);
     shared
@@ -258,7 +280,11 @@ fn load_css() {
     let provider = gtk::CssProvider::new();
     provider.load_from_data(CSS);
     if let Some(display) = gdk::Display::default() {
-        gtk::style_context_add_provider_for_display(&display, &provider, gtk::STYLE_PROVIDER_PRIORITY_APPLICATION);
+        gtk::style_context_add_provider_for_display(
+            &display,
+            &provider,
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+        );
     }
 }
 
@@ -364,7 +390,12 @@ fn key_pressed(app: &Rc<App>, accel: &str) {
         "<control>o" => open_dialog(app),
         "F9" => toggle_toc(app),
         "<control>w" => app.ui.window.close(),
-        "<control>q" => app.ui.window.application().expect("window attached to application").quit(),
+        "<control>q" => app
+            .ui
+            .window
+            .application()
+            .expect("window attached to application")
+            .quit(),
         _ => {}
     }
 }
@@ -382,7 +413,9 @@ fn show_about(window: &gtk::ApplicationWindow) {
     about.set_program_name(Some("markview"));
     about.set_version(Some(env!("CARGO_PKG_VERSION")));
     about.set_comments(Some("A minimal, theme-native markdown viewer"));
-    about.set_license(Some("Licensed under either of MIT or Apache-2.0, at your option."));
+    about.set_license(Some(
+        "Licensed under either of MIT or Apache-2.0, at your option.",
+    ));
     about.set_logo_icon_name(Some(APP_ID));
     about.set_website(Some("https://github.com/markview/markview"));
     about.present();
@@ -399,7 +432,9 @@ fn welcome_page() -> gtk::Widget {
     let button = gtk::Button::with_label("Open a file…");
     button.set_css_classes(&["mv-welcome-button"]);
     button.set_action_name(Some("win.open"));
-    let hint = gtk::Label::new(Some("Ctrl+O open · F9 contents · Ctrl+F find · live reload on save"));
+    let hint = gtk::Label::new(Some(
+        "Ctrl+O open · F9 contents · Ctrl+F find · live reload on save",
+    ));
     hint.set_css_classes(&["mv-welcome-hint"]);
     column.append(&title);
     column.append(&subtitle);
@@ -442,19 +477,68 @@ fn open_dialog(app: &Rc<App>) {
 }
 
 impl App {
+    pub fn search_set(&self, text: &str) {
+        self.ui.search_entry.set_text(text);
+    }
+
+    pub fn search_counter(&self) -> String {
+        self.ui.match_counter.text().to_string()
+    }
+
+    pub fn toc_row_count(&self) -> i32 {
+        self.ui.toc_list.observe_children().n_items() as i32
+    }
+
+    pub fn toc_list(&self) -> &gtk::ListBox {
+        &self.ui.toc_list
+    }
+
+    pub fn scroll_value(&self) -> f64 {
+        self.ui.scrolled.vadjustment().value()
+    }
+
+    pub fn label_group_count(&self) -> usize {
+        self.state
+            .borrow()
+            .rendered
+            .as_ref()
+            .map(|r| r.groups.len())
+            .unwrap_or(0)
+    }
+
+    pub fn visible_page(&self) -> String {
+        self.ui
+            .stack
+            .visible_child_name()
+            .map(|s| s.to_string())
+            .unwrap_or_default()
+    }
+
+    pub fn current_doc_len(&self) -> usize {
+        self.state.borrow().doc.blocks.len()
+    }
+
     pub fn open_path(&self, path: &Path) {
         {
             let mut state = self.state.borrow_mut();
+            state.path = Some(path.to_path_buf());
             state.matches.clear();
             state.active = None;
-            state.find_timer = None;
+            state.find_pending = None;
+            state.watcher = None;
         }
         let path = path.to_path_buf();
         let sender = self.loader.clone();
         std::thread::spawn(move || {
             let msg = match std::fs::read(&path) {
-                Ok(bytes) => LoadMsg::Loaded { path: path.clone(), doc: doc::parse(&String::from_utf8_lossy(&bytes)) },
-                Err(err) => LoadMsg::Failed { path: path.clone(), message: err.to_string() },
+                Ok(bytes) => LoadMsg::Loaded {
+                    path: path.clone(),
+                    doc: doc::parse(&String::from_utf8_lossy(&bytes)),
+                },
+                Err(err) => LoadMsg::Failed {
+                    path: path.clone(),
+                    message: err.to_string(),
+                },
             };
             let _ = sender.send(msg);
         });
@@ -462,7 +546,12 @@ impl App {
 }
 
 fn show_error(app: &Rc<App>, path: &Path, message: &str) {
-    app.ui.error_label.set_text(&format!("{}\n\n{}", path.display(), message));
+    if app.state.borrow().path.as_deref() != Some(path) {
+        return;
+    }
+    app.ui
+        .error_label
+        .set_text(&format!("{}\n\n{}", path.display(), message));
     app.ui.stack.set_visible_child_name("error");
     app.ui.window.set_title(Some("markview"));
     app.ui.title_label.set_text("markview");
@@ -474,6 +563,9 @@ fn show_error(app: &Rc<App>, path: &Path, message: &str) {
 }
 
 fn apply_doc(app: &Rc<App>, path: &Path, parsed: Document) {
+    if app.state.borrow().path.as_deref() != Some(path) {
+        return;
+    }
     let anchors = Rc::new(RefCell::new(HashMap::new()));
     let toc_targets = Rc::new(RefCell::new(Vec::new()));
     let link_handler: render::LinkHandler = {
@@ -512,7 +604,10 @@ fn apply_doc(app: &Rc<App>, path: &Path, parsed: Document) {
 
     let index = TextIndex::build(&parsed);
     let headings = parsed.headings.clone();
-    let file_name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "markview".to_owned());
+    let file_name = path
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_else(|| "markview".to_owned());
 
     {
         let mut state = app.state.borrow_mut();
@@ -565,7 +660,9 @@ fn rebuild_toc(app: &Rc<App>, headings: &[TocEntry]) {
         let text = doc
             .resolve(&entry.path)
             .and_then(|block| match block {
-                doc::Block::Heading { inlines, .. } => Some(markup::walk_inlines(inlines, doc, None).text),
+                doc::Block::Heading { inlines, .. } => {
+                    Some(markup::walk_inlines(inlines, doc, None).text)
+                }
                 _ => None,
             })
             .unwrap_or_default();
@@ -583,8 +680,12 @@ fn rebuild_toc(app: &Rc<App>, headings: &[TocEntry]) {
 
 fn scroll_to(scrolled: &gtk::ScrolledWindow, target: &impl IsA<gtk::Widget>) {
     let target = target.upcast_ref::<gtk::Widget>();
-    let Some(viewport) = scrolled.child().and_downcast::<gtk::Viewport>() else { return };
-    let Some(point) = target.compute_point(&viewport, &gtk::graphene::Point::new(0.0, 0.0)) else { return };
+    let Some(viewport) = scrolled.child().and_downcast::<gtk::Viewport>() else {
+        return;
+    };
+    let Some(point) = target.compute_point(&viewport, &gtk::graphene::Point::new(0.0, 0.0)) else {
+        return;
+    };
     let adjustment = scrolled.vadjustment();
     let desired = point.y() as f64 - 12.0;
     let max = (adjustment.upper() - adjustment.page_size()).max(adjustment.lower());
@@ -596,17 +697,9 @@ fn launch_uri(uri: &str) {
 }
 
 fn schedule_find(app: &Rc<App>) {
-    if let Some(id) = app.state.borrow_mut().find_timer.take() {
-        id.remove();
+    if let Ok(mut state) = app.state.try_borrow_mut() {
+        state.find_pending = Some(std::time::Instant::now());
     }
-    let timer_app = app.clone();
-    let id = glib::timeout_add_local(FIND_DEBOUNCE, move || {
-        timer_app.state.borrow_mut().find_timer = None;
-        let needle = timer_app.ui.search_entry.text().to_string();
-        run_find(&timer_app, &needle);
-        glib::ControlFlow::Continue
-    });
-    app.state.borrow_mut().find_timer = Some(id);
 }
 
 fn clear_find(app: &Rc<App>) {
@@ -620,13 +713,24 @@ fn clear_find(app: &Rc<App>) {
 fn run_find(app: &Rc<App>, needle: &str) {
     let (hit, active_color) = probe_colors(app);
     let state = app.state.borrow();
-    let Some(rendered) = &state.rendered else { return };
+    let Some(rendered) = &state.rendered else {
+        return;
+    };
     let matches = find::find(&state.index, needle);
-    let active = if matches.is_empty() { None } else { find::cycle(&matches, None, true) };
+    let active = if matches.is_empty() {
+        None
+    } else {
+        find::cycle(&matches, None, true)
+    };
     render::apply_highlight(
         &state.doc,
         rendered,
-        |entry| (find::entry_ranges(&matches, entry), find::active_range(&matches, active, entry)),
+        |entry| {
+            (
+                find::entry_ranges(&matches, entry),
+                find::active_range(&matches, active, entry),
+            )
+        },
         &hit,
         &active_color,
     );
@@ -636,7 +740,9 @@ fn run_find(app: &Rc<App>, needle: &str) {
         format!("{}/{}", active.map(|a| a + 1).unwrap_or(0), matches.len())
     };
     app.ui.match_counter.set_text(&counter);
-    let scroll_target = active.and_then(|a| matches.get(a)).and_then(|m| rendered.first_label(m.entry).cloned());
+    let scroll_target = active
+        .and_then(|a| matches.get(a))
+        .and_then(|m| rendered.first_label(m.entry).cloned());
     drop(state);
     if let Some(target) = scroll_target {
         scroll_to(&app.ui.scrolled, &target);
@@ -650,18 +756,27 @@ fn cycle_find(app: &Rc<App>, forward: bool) {
     let (hit, active_color) = probe_colors(app);
     let state = app.state.borrow();
     let active = find::cycle(&state.matches, state.active, forward);
-    let Some(rendered) = &state.rendered else { return };
+    let Some(rendered) = &state.rendered else {
+        return;
+    };
     render::apply_highlight(
         &state.doc,
         rendered,
-        |entry| (find::entry_ranges(&state.matches, entry), find::active_range(&state.matches, active, entry)),
+        |entry| {
+            (
+                find::entry_ranges(&state.matches, entry),
+                find::active_range(&state.matches, active, entry),
+            )
+        },
         &hit,
         &active_color,
     );
     if !state.matches.is_empty() {
-        app.ui
-            .match_counter
-            .set_text(&format!("{}/{}", active.map(|a| a + 1).unwrap_or(0), state.matches.len()));
+        app.ui.match_counter.set_text(&format!(
+            "{}/{}",
+            active.map(|a| a + 1).unwrap_or(0),
+            state.matches.len()
+        ));
     }
     let scroll_target = active
         .and_then(|a| state.matches.get(a))
@@ -674,7 +789,10 @@ fn cycle_find(app: &Rc<App>, forward: bool) {
 }
 
 fn probe_colors(app: &Rc<App>) -> (String, String) {
-    (rgba_hex(app.ui.probe_hit.color()), rgba_hex(app.ui.probe_active.color()))
+    (
+        rgba_hex(app.ui.probe_hit.color()),
+        rgba_hex(app.ui.probe_active.color()),
+    )
 }
 
 fn rgba_hex(color: gdk::RGBA) -> String {

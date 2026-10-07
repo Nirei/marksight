@@ -60,11 +60,21 @@ pub struct RenderedDoc {
 
 impl RenderedDoc {
     pub fn first_label(&self, entry: usize) -> Option<&gtk::Label> {
-        self.groups.iter().find(|g| g.entry == entry).and_then(|g| g.labels.first()).map(|s| &s.label)
+        self.groups
+            .iter()
+            .find(|g| g.entry == entry)
+            .and_then(|g| g.labels.first())
+            .map(|s| &s.label)
     }
 }
 
-pub fn apply_highlight(doc: &Document, rendered: &RenderedDoc, ranges_of: impl Fn(usize) -> (Vec<std::ops::Range<usize>>, Option<std::ops::Range<usize>>), hit: &str, active: &str) {
+pub fn apply_highlight(
+    doc: &Document,
+    rendered: &RenderedDoc,
+    ranges_of: impl Fn(usize) -> (Vec<std::ops::Range<usize>>, Option<std::ops::Range<usize>>),
+    hit: &str,
+    active: &str,
+) {
     for group in &rendered.groups {
         let (ranges, active_range) = ranges_of(group.entry);
         if ranges.is_empty() && active_range.is_none() {
@@ -90,7 +100,11 @@ pub fn apply_highlight(doc: &Document, rendered: &RenderedDoc, ranges_of: impl F
             Source::Inlines(inlines) => {
                 let walk = markup::walk_inlines(inlines, doc, Some(hl));
                 for slot in &group.labels {
-                    let markup = walk.segments.get(slot.segment).map(|s| s.markup.clone()).unwrap_or_default();
+                    let markup = walk
+                        .segments
+                        .get(slot.segment)
+                        .map(|s| s.markup.clone())
+                        .unwrap_or_default();
                     update_slot(slot, markup);
                 }
             }
@@ -110,9 +124,19 @@ pub fn render(ctx: &RenderCtx<'_>) -> RenderedDoc {
     let column = gtk::Box::new(gtk::Orientation::Vertical, 12);
     column.set_css_classes(&["mv-content"]);
     let mut groups = Vec::new();
-    render_blocks(&ctx.doc.blocks, &column, ctx, &mut groups, 1, Entries::PerBlock { base: 0 });
+    render_blocks(
+        &ctx.doc.blocks,
+        &column,
+        ctx,
+        &mut groups,
+        1,
+        Entries::PerBlock { base: 0 },
+    );
     render_footnotes(ctx, &column, &mut groups);
-    RenderedDoc { root: column.upcast(), groups }
+    RenderedDoc {
+        root: column.upcast(),
+        groups,
+    }
 }
 
 fn render_footnotes(ctx: &RenderCtx<'_>, column: &gtk::Box, groups: &mut Vec<LabelGroup>) {
@@ -128,7 +152,11 @@ fn render_footnotes(ctx: &RenderCtx<'_>, column: &gtk::Box, groups: &mut Vec<Lab
         let row = gtk::Box::new(gtk::Orientation::Horizontal, 8);
         row.set_css_classes(&["mv-footnote"]);
         let marker = gtk::Label::new(None);
-        marker.set_markup(&format!("<a href=\"#fn-{}\"><sup>[{}]</sup></a>", index + 1, index + 1));
+        marker.set_markup(&format!(
+            "<a href=\"#fn-{}\"><sup>[{}]</sup></a>",
+            index + 1,
+            index + 1
+        ));
         marker.set_valign(gtk::Align::Start);
         marker.connect_activate_link({
             let handler = ctx.link_handler.clone();
@@ -137,15 +165,31 @@ fn render_footnotes(ctx: &RenderCtx<'_>, column: &gtk::Box, groups: &mut Vec<Lab
         row.append(&marker);
         let body = gtk::Box::new(gtk::Orientation::Vertical, 6);
         body.set_hexpand(true);
-        render_blocks(&footnote.blocks, &body, ctx, groups, 1, Entries::PerBlock { base });
+        render_blocks(
+            &footnote.blocks,
+            &body,
+            ctx,
+            groups,
+            1,
+            Entries::PerBlock { base },
+        );
         row.append(&body);
         column.append(&row);
-        ctx.anchors.borrow_mut().insert(format!("fn-{}", index + 1), row.clone().upcast());
+        ctx.anchors
+            .borrow_mut()
+            .insert(format!("fn-{}", index + 1), row.clone().upcast());
         base += footnote.blocks.len();
     }
 }
 
-fn render_blocks(blocks: &[Block], into: &gtk::Box, ctx: &RenderCtx<'_>, groups: &mut Vec<LabelGroup>, depth: usize, entries: Entries) {
+fn render_blocks(
+    blocks: &[Block],
+    into: &gtk::Box,
+    ctx: &RenderCtx<'_>,
+    groups: &mut Vec<LabelGroup>,
+    depth: usize,
+    entries: Entries,
+) {
     for (index, block) in blocks.iter().enumerate() {
         let entry = match entries {
             Entries::PerBlock { base } => base + index,
@@ -155,12 +199,21 @@ fn render_blocks(blocks: &[Block], into: &gtk::Box, ctx: &RenderCtx<'_>, groups:
     }
 }
 
-fn render_block(block: &Block, into: &gtk::Box, ctx: &RenderCtx<'_>, groups: &mut Vec<LabelGroup>, depth: usize, entry: usize) {
+fn render_block(
+    block: &Block,
+    into: &gtk::Box,
+    ctx: &RenderCtx<'_>,
+    groups: &mut Vec<LabelGroup>,
+    depth: usize,
+    entry: usize,
+) {
     match block {
         Block::Heading { level, inlines, .. } => {
             let css = format!("mv-h{level}");
             let widget = render_inlines(inlines, &["mv-para", &css], ctx, groups, entry);
-            widget.update_property(&[gtk::accessible::Property::Label(&markup::walk_inlines(inlines, ctx.doc, None).text)]);
+            widget.update_property(&[gtk::accessible::Property::Label(
+                &markup::walk_inlines(inlines, ctx.doc, None).text,
+            )]);
             ctx.toc_targets.borrow_mut().push(widget.clone());
             into.append(&widget);
         }
@@ -184,7 +237,12 @@ fn render_block(block: &Block, into: &gtk::Box, ctx: &RenderCtx<'_>, groups: &mu
             groups.push(LabelGroup {
                 entry,
                 source: Source::Code(Rc::from(text.as_str())),
-                labels: vec![LabelSlot { label: label.clone(), segment: 0, base_markup: base.clone(), current: RefCell::new(base) }],
+                labels: vec![LabelSlot {
+                    label: label.clone(),
+                    segment: 0,
+                    base_markup: base.clone(),
+                    current: RefCell::new(base),
+                }],
             });
             into.append(&label);
         }
@@ -192,10 +250,20 @@ fn render_block(block: &Block, into: &gtk::Box, ctx: &RenderCtx<'_>, groups: &mu
             let quote = gtk::Box::new(gtk::Orientation::Vertical, 8);
             quote.set_css_classes(&["mv-quote"]);
             quote.set_hexpand(true);
-            render_blocks(blocks, &quote, ctx, groups, depth + 1, Entries::Shared { entry });
+            render_blocks(
+                blocks,
+                &quote,
+                ctx,
+                groups,
+                depth + 1,
+                Entries::Shared { entry },
+            );
             into.append(&quote);
         }
-        Block::Quote { kind: Some(alert), blocks } => {
+        Block::Quote {
+            kind: Some(alert),
+            blocks,
+        } => {
             let css = match alert {
                 BlockQuoteKind::Note => "mv-alert mv-alert-note",
                 BlockQuoteKind::Tip => "mv-alert mv-alert-tip",
@@ -207,10 +275,21 @@ fn render_block(block: &Block, into: &gtk::Box, ctx: &RenderCtx<'_>, groups: &mu
             box_.set_css_classes(&[css]);
             box_.set_hexpand(true);
             box_.append(&plain_label(alert_title(*alert), &["mv-alert-title"]));
-            render_blocks(blocks, &box_, ctx, groups, depth + 1, Entries::Shared { entry });
+            render_blocks(
+                blocks,
+                &box_,
+                ctx,
+                groups,
+                depth + 1,
+                Entries::Shared { entry },
+            );
             into.append(&box_);
         }
-        Block::List { start, tight, items } => {
+        Block::List {
+            start,
+            tight,
+            items,
+        } => {
             let list = gtk::Box::new(gtk::Orientation::Vertical, if *tight { 3 } else { 9 });
             list.set_css_classes(&["mv-list"]);
             list.set_hexpand(true);
@@ -230,7 +309,8 @@ fn render_block(block: &Block, into: &gtk::Box, ctx: &RenderCtx<'_>, groups: &mu
                     }
                     None => match start {
                         Some(first) => {
-                            let label = gtk::Label::new(Some(&format!("{}.", first + position as u64)));
+                            let label =
+                                gtk::Label::new(Some(&format!("{}.", first + position as u64)));
                             finish_marker(&label);
                             label.upcast::<gtk::Widget>()
                         }
@@ -244,7 +324,14 @@ fn render_block(block: &Block, into: &gtk::Box, ctx: &RenderCtx<'_>, groups: &mu
                 row.append(&marker);
                 let body = gtk::Box::new(gtk::Orientation::Vertical, if *tight { 3 } else { 9 });
                 body.set_hexpand(true);
-                render_blocks(&item.blocks, &body, ctx, groups, depth + 1, Entries::Shared { entry });
+                render_blocks(
+                    &item.blocks,
+                    &body,
+                    ctx,
+                    groups,
+                    depth + 1,
+                    Entries::Shared { entry },
+                );
                 row.append(&body);
                 list.append(&row);
             }
@@ -267,7 +354,10 @@ fn render_block(block: &Block, into: &gtk::Box, ctx: &RenderCtx<'_>, groups: &mu
                     label.set_wrap(true);
                     label.set_wrap_mode(pango::WrapMode::WordChar);
                     label.set_valign(gtk::Align::Start);
-                    let xalign = aligns.get(column).map(|a| alignment_xalign(*a)).unwrap_or(0.0);
+                    let xalign = aligns
+                        .get(column)
+                        .map(|a| alignment_xalign(*a))
+                        .unwrap_or(0.0);
                     label.set_xalign(xalign);
                     label.set_hexpand(true);
                     label.connect_activate_link({
@@ -275,12 +365,21 @@ fn render_block(block: &Block, into: &gtk::Box, ctx: &RenderCtx<'_>, groups: &mu
                         move |_, uri| link_activate(&handler, uri)
                     });
                     let walk = markup::walk_inlines(cell, ctx.doc, None);
-                    let base = walk.segments.first().map(|s| s.markup.clone()).unwrap_or_default();
+                    let base = walk
+                        .segments
+                        .first()
+                        .map(|s| s.markup.clone())
+                        .unwrap_or_default();
                     label.set_markup(&base);
                     groups.push(LabelGroup {
                         entry,
                         source: Source::Inlines(Rc::new(cell.clone())),
-                        labels: vec![LabelSlot { label: label.clone(), segment: 0, base_markup: base.clone(), current: RefCell::new(base) }],
+                        labels: vec![LabelSlot {
+                            label: label.clone(),
+                            segment: 0,
+                            base_markup: base.clone(),
+                            current: RefCell::new(base),
+                        }],
                     });
                     table.attach(&label, column as i32, row_index as i32, 1, 1);
                 }
@@ -319,7 +418,13 @@ fn alert_title(kind: BlockQuoteKind) -> &'static str {
     }
 }
 
-fn render_inlines(inlines: &[Inline], css: &[&str], ctx: &RenderCtx<'_>, groups: &mut Vec<LabelGroup>, entry: usize) -> gtk::Widget {
+fn render_inlines(
+    inlines: &[Inline],
+    css: &[&str],
+    ctx: &RenderCtx<'_>,
+    groups: &mut Vec<LabelGroup>,
+    entry: usize,
+) -> gtk::Widget {
     let walk = markup::walk_inlines(inlines, ctx.doc, None);
     if walk.images.is_empty() {
         let label = gtk::Label::new(None);
@@ -333,12 +438,21 @@ fn render_inlines(inlines: &[Inline], css: &[&str], ctx: &RenderCtx<'_>, groups:
             let handler = ctx.link_handler.clone();
             move |_, uri| link_activate(&handler, uri)
         });
-        let base = walk.segments.first().map(|s| s.markup.clone()).unwrap_or_default();
+        let base = walk
+            .segments
+            .first()
+            .map(|s| s.markup.clone())
+            .unwrap_or_default();
         label.set_markup(&base);
         groups.push(LabelGroup {
             entry,
             source: Source::Inlines(Rc::new(inlines.to_vec())),
-            labels: vec![LabelSlot { label: label.clone(), segment: 0, base_markup: base.clone(), current: RefCell::new(base) }],
+            labels: vec![LabelSlot {
+                label: label.clone(),
+                segment: 0,
+                base_markup: base.clone(),
+                current: RefCell::new(base),
+            }],
         });
         label.upcast::<gtk::Widget>()
     } else {
@@ -347,7 +461,15 @@ fn render_inlines(inlines: &[Inline], css: &[&str], ctx: &RenderCtx<'_>, groups:
         for (index, image) in walk.images.iter().enumerate() {
             if let Some(segment) = walk.segments.get(index) {
                 if !segment.markup.trim().is_empty() {
-                    let label = labeled(segment.markup.clone(), css, ctx, groups, entry, Rc::new(inlines.to_vec()), index);
+                    let label = labeled(
+                        segment.markup.clone(),
+                        css,
+                        ctx,
+                        groups,
+                        entry,
+                        Rc::new(inlines.to_vec()),
+                        index,
+                    );
                     box_.append(&label);
                 }
             }
@@ -355,7 +477,15 @@ fn render_inlines(inlines: &[Inline], css: &[&str], ctx: &RenderCtx<'_>, groups:
         }
         if let Some(last) = walk.segments.get(walk.images.len()) {
             if !last.markup.trim().is_empty() {
-                let label = labeled(last.markup.clone(), css, ctx, groups, entry, Rc::new(inlines.to_vec()), walk.images.len());
+                let label = labeled(
+                    last.markup.clone(),
+                    css,
+                    ctx,
+                    groups,
+                    entry,
+                    Rc::new(inlines.to_vec()),
+                    walk.images.len(),
+                );
                 box_.append(&label);
             }
         }
@@ -363,7 +493,15 @@ fn render_inlines(inlines: &[Inline], css: &[&str], ctx: &RenderCtx<'_>, groups:
     }
 }
 
-fn labeled(markup: String, css: &[&str], ctx: &RenderCtx<'_>, groups: &mut Vec<LabelGroup>, entry: usize, inlines: Rc<Vec<Inline>>, segment: usize) -> gtk::Label {
+fn labeled(
+    markup: String,
+    css: &[&str],
+    ctx: &RenderCtx<'_>,
+    groups: &mut Vec<LabelGroup>,
+    entry: usize,
+    inlines: Rc<Vec<Inline>>,
+    segment: usize,
+) -> gtk::Label {
     let label = gtk::Label::new(None);
     label.set_css_classes(css);
     label.set_xalign(0.0);
@@ -379,7 +517,12 @@ fn labeled(markup: String, css: &[&str], ctx: &RenderCtx<'_>, groups: &mut Vec<L
     groups.push(LabelGroup {
         entry,
         source: Source::Inlines(inlines),
-        labels: vec![LabelSlot { label: label.clone(), segment, base_markup: markup.clone(), current: RefCell::new(markup) }],
+        labels: vec![LabelSlot {
+            label: label.clone(),
+            segment,
+            base_markup: markup.clone(),
+            current: RefCell::new(markup),
+        }],
     });
     label
 }
