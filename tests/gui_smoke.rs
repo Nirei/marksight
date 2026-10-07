@@ -129,6 +129,36 @@ fn search_finds_and_cycles(mv: &std::rc::Rc<app::App>) {
         "kitchen sink has two 'footnote' hits, got {:?}",
         mv.search_counter()
     );
+
+    let highlighted = mv.debug_label_states();
+    assert_eq!(
+        highlighted.len(),
+        2,
+        "exactly two labels should be highlighted, got {highlighted:?}"
+    );
+    for markup in &highlighted {
+        let plain = strip_tags(markup);
+        assert!(
+            plain.to_lowercase().contains("footnote"),
+            "highlight landed on text without the needle (phantom match): {markup:?}"
+        );
+    }
+
+    assert_eq!(mv.search_counter(), "1/2");
+    mv.search_emit_activate();
+    pump(Duration::from_millis(200));
+    assert_eq!(
+        mv.search_counter(),
+        "2/2",
+        "Enter should cycle to the second match"
+    );
+    mv.search_emit_activate();
+    pump(Duration::from_millis(200));
+    assert_eq!(
+        mv.search_counter(),
+        "1/2",
+        "Enter should wrap back to the first match"
+    );
 }
 
 fn search_clears_highlights(mv: &std::rc::Rc<app::App>) {
@@ -207,6 +237,20 @@ fn scroll_targets_move_viewport(mv: &std::rc::Rc<app::App>) {
         mv.scroll_value()
     );
     let _ = std::fs::remove_file(&path);
+}
+
+fn strip_tags(markup: &str) -> String {
+    let mut out = String::new();
+    let mut in_tag = false;
+    for ch in markup.chars() {
+        match ch {
+            '<' => in_tag = true,
+            '>' => in_tag = false,
+            _ if !in_tag => out.push(ch),
+            _ => {}
+        }
+    }
+    out
 }
 
 fn assert_last_row_visible(mv: &std::rc::Rc<app::App>) {

@@ -381,6 +381,24 @@ fn wire(app: &Rc<App>, gtk_app: &gtk::Application, open_button: &gtk::Button) {
         let app = app.clone();
         move |_| cycle_find(&app, false)
     });
+    app.ui.search_entry.connect_activate({
+        let app = app.clone();
+        move |_| cycle_find(&app, true)
+    });
+    let key_controller = gtk::EventControllerKey::new();
+    key_controller.connect_key_pressed({
+        let app = app.clone();
+        move |_, keyval, _, state| {
+            if keyval == gtk::gdk::Key::Return && state.contains(gtk::gdk::ModifierType::SHIFT_MASK)
+            {
+                cycle_find(&app, false);
+                glib::Propagation::Stop
+            } else {
+                glib::Propagation::Proceed
+            }
+        }
+    });
+    app.ui.search_entry.add_controller(key_controller);
     app.ui.search_entry.connect_stop_search({
         let app = app.clone();
         move |_| {
@@ -508,6 +526,19 @@ impl App {
         self.ui.scrolled.clone()
     }
 
+    pub fn debug_label_states(&self) -> Vec<String> {
+        let state = self.state.borrow();
+        state
+            .rendered
+            .as_ref()
+            .map(|r| r.debug_highlighted())
+            .unwrap_or_default()
+    }
+
+    pub fn search_emit_activate(&self) {
+        self.ui.search_entry.emit_by_name::<()>("activate", &[]);
+    }
+
     pub fn scroll_value(&self) -> f64 {
         self.ui.scrolled.vadjustment().value()
     }
@@ -623,7 +654,9 @@ fn apply_doc(app: &Rc<App>, path: &Path, parsed: Document) {
     }
     app.ui.scrolled.vadjustment().set_value(0.0);
 
-    let index = TextIndex::build(&parsed);
+    let index = TextIndex {
+        entries: rendered.groups.iter().map(|g| g.text(&parsed)).collect(),
+    };
     let headings = parsed.headings.clone();
     let file_name = path
         .file_name()
