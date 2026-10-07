@@ -210,6 +210,8 @@ fn build(app: &gtk::Application, loader: mpsc::Sender<LoadMsg>) -> Rc<App> {
     toc_list.set_selection_mode(gtk::SelectionMode::None);
     let toc_scrolled = gtk::ScrolledWindow::new();
     toc_scrolled.set_policy(gtk::PolicyType::Never, gtk::PolicyType::Automatic);
+    toc_scrolled.set_hexpand(true);
+    toc_scrolled.set_vexpand(true);
     toc_scrolled.set_child(Some(&toc_list));
     let toc_column = gtk::Box::new(gtk::Orientation::Vertical, 0);
     toc_column.set_css_classes(&["mv-toc-column"]);
@@ -217,6 +219,8 @@ fn build(app: &gtk::Application, loader: mpsc::Sender<LoadMsg>) -> Rc<App> {
     toc_column.append(&toc_scrolled);
 
     let paned = gtk::Paned::new(gtk::Orientation::Horizontal);
+    paned.set_vexpand(true);
+    paned.set_hexpand(true);
     paned.set_start_child(Some(&toc_column));
     paned.set_end_child(Some(&stack));
     paned.set_position(230);

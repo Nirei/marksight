@@ -52,6 +52,7 @@ fn gui_smoke_suite() {
     welcome_page_visible(&mv);
     open_document(&mv);
     toc_matches_headings(&mv);
+    toc_sidebar_fills_pane(&mv);
     search_finds_and_cycles(&mv);
     search_clears_highlights(&mv);
     scroll_targets_move_viewport(&mv);
@@ -86,6 +87,19 @@ fn open_document(mv: &std::rc::Rc<app::App>) {
 fn toc_matches_headings(mv: &std::rc::Rc<app::App>) {
     let doc = markview::doc::parse(&std::fs::read_to_string(fixture("kitchen-sink.md")).unwrap());
     assert_eq!(mv.toc_row_count() as usize, doc.headings.len());
+}
+
+fn toc_sidebar_fills_pane(mv: &std::rc::Rc<app::App>) {
+    let ancestor = mv
+        .toc_list()
+        .ancestor(gtk::ScrolledWindow::static_type())
+        .expect("TOC list has no ScrolledWindow ancestor");
+    let scrolled = ancestor.downcast_ref::<gtk::ScrolledWindow>().unwrap();
+    let page = scrolled.vadjustment().page_size();
+    assert!(
+        page >= 400.0,
+        "TOC sidebar should fill its pane vertically (visible page {page}px in a ~700px window)"
+    );
 }
 
 fn search_finds_and_cycles(mv: &std::rc::Rc<app::App>) {
