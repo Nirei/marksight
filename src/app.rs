@@ -240,6 +240,7 @@ fn build(app: &gtk::Application, loader: mpsc::Sender<LoadMsg>) -> Rc<App> {
     let search_bar = gtk::SearchBar::new();
     search_bar.set_child(Some(&search_box));
     search_bar.set_key_capture_widget(Some(&window));
+    search_bar.connect_entry(&search_entry);
 
     let probe_hit = gtk::Label::new(None);
     probe_hit.set_css_classes(&["mv-probe-hit"]);
