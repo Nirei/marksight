@@ -158,24 +158,42 @@ fn scroll_targets_move_viewport(mv: &std::rc::Rc<app::App>) {
     );
 
     let toc = mv.toc_list();
-    let last = toc.last_child().unwrap();
-    let row = last.downcast_ref::<gtk::ListBoxRow>().unwrap();
-    toc.emit_by_name::<()>("row-activated", &[&row]);
-    pump(Duration::from_millis(300));
+    let row_at = |index: i32| -> gtk::ListBoxRow {
+        let mut child = toc.first_child().unwrap();
+        for _ in 0..index {
+            child = child.next_sibling().unwrap();
+        }
+        child.downcast::<gtk::ListBoxRow>().unwrap()
+    };
+    let click_row = |index: i32| {
+        let row = row_at(index);
+        toc.emit_by_name::<()>("row-activated", &[&row]);
+        pump(Duration::from_millis(320));
+    };
+
+    click_row(399);
     assert!(
         mv.scroll_value() > 100.0,
         "activating the last TOC entry should scroll far down, got {}",
         mv.scroll_value()
     );
+    assert_last_row_visible(mv);
 
-    let first = toc.first_child().unwrap();
-    let row = first.downcast_ref::<gtk::ListBoxRow>().unwrap();
-    toc.emit_by_name::<()>("row-activated", &[&row]);
-    pump(Duration::from_millis(300));
+    click_row(0);
     assert!(
         mv.scroll_value() < 50.0,
         "activating the first TOC entry should scroll back up, got {}",
         mv.scroll_value()
+    );
+
+    click_row(200);
+    let first_landing = mv.scroll_value();
+    click_row(50);
+    click_row(200);
+    let second_landing = mv.scroll_value();
+    assert!(
+        (first_landing - second_landing).abs() <= 1.0,
+        "clicking the same TOC entry must land identically regardless of prior scroll ({first_landing} vs {second_landing})"
     );
 
     mv.search_set("heading 350");
@@ -189,6 +207,25 @@ fn scroll_targets_move_viewport(mv: &std::rc::Rc<app::App>) {
         mv.scroll_value()
     );
     let _ = std::fs::remove_file(&path);
+}
+
+fn assert_last_row_visible(mv: &std::rc::Rc<app::App>) {
+    let scrolled = mv.doc_scrolled();
+    let viewport = scrolled
+        .child()
+        .unwrap()
+        .downcast::<gtk::Viewport>()
+        .unwrap();
+    let page = scrolled.vadjustment().page_size();
+    let target = mv.heading_widget(399).expect("last heading widget");
+    let point = target
+        .compute_point(&viewport, &gtk::graphene::Point::new(0.0, 0.0))
+        .expect("last heading position");
+    assert!(
+        point.y() >= -5.0 && point.y() as f64 <= page,
+        "last heading should be inside the viewport after jumping to it (y={}, page={page})",
+        point.y()
+    );
 }
 
 fn pathological_documents_do_not_crash(mv: &std::rc::Rc<app::App>) {

@@ -63,6 +63,7 @@ struct State {
     watcher: Option<FileWatcher>,
     toc_targets: Vec<gtk::Widget>,
     find_pending: Option<std::time::Instant>,
+    scroll_generation: u64,
 }
 
 impl State {
@@ -77,6 +78,7 @@ impl State {
             watcher: None,
             toc_targets: Vec::new(),
             find_pending: None,
+            scroll_generation: 0,
         }
     }
 }
@@ -361,7 +363,7 @@ fn wire(app: &Rc<App>, gtk_app: &gtk::Application, open_button: &gtk::Button) {
             let index = row.index() as usize;
             let target = app.state.borrow().toc_targets.get(index).cloned();
             if let Some(target) = target {
-                scroll_to(&app.ui.scrolled, &target);
+                scroll_to(&app, &target);
             }
         }
     });
@@ -497,6 +499,14 @@ impl App {
         &self.ui.toc_list
     }
 
+    pub fn heading_widget(&self, index: usize) -> Option<gtk::Widget> {
+        self.state.borrow().toc_targets.get(index).cloned()
+    }
+
+    pub fn doc_scrolled(&self) -> gtk::ScrolledWindow {
+        self.ui.scrolled.clone()
+    }
+
     pub fn scroll_value(&self) -> f64 {
         self.ui.scrolled.vadjustment().value()
     }
@@ -580,12 +590,12 @@ fn apply_doc(app: &Rc<App>, path: &Path, parsed: Document) {
     let toc_targets = Rc::new(RefCell::new(Vec::new()));
     let link_handler: render::LinkHandler = {
         let anchors = anchors.clone();
-        let scrolled = app.ui.scrolled.clone();
+        let app_for_links = app.clone();
         Rc::new(move |uri: &str| {
             if let Some(anchor) = uri.strip_prefix("#fn-") {
                 let target = anchors.borrow().get(anchor).cloned();
                 if let Some(target) = target {
-                    scroll_to(&scrolled, &target);
+                    scroll_to(&app_for_links, &target);
                     return true;
                 }
                 return false;
@@ -697,12 +707,33 @@ fn rebuild_toc(app: &Rc<App>, headings: &[TocEntry]) {
     }
 }
 
-fn scroll_to(scrolled: &gtk::ScrolledWindow, target: &impl IsA<gtk::Widget>) {
-    let target = target.upcast_ref::<gtk::Widget>();
+fn scroll_to(app: &Rc<App>, target: &impl IsA<gtk::Widget>) {
+    let target = target.upcast_ref::<gtk::Widget>().clone();
+    let generation = {
+        let mut state = app.state.borrow_mut();
+        state.scroll_generation += 1;
+        state.scroll_generation
+    };
+    apply_scroll(&app.ui.scrolled, &target);
+    for delay in [80, 240] {
+        let app = app.clone();
+        let target = target.clone();
+        glib::timeout_add_local_once(Duration::from_millis(delay), move || {
+            if app.state.borrow().scroll_generation == generation {
+                apply_scroll(&app.ui.scrolled, &target);
+            }
+        });
+    }
+}
+
+fn apply_scroll(scrolled: &gtk::ScrolledWindow, target: &gtk::Widget) {
     let Some(viewport) = scrolled.child().and_downcast::<gtk::Viewport>() else {
         return;
     };
-    let Some(point) = target.compute_point(&viewport, &gtk::graphene::Point::new(0.0, 0.0)) else {
+    let Some(content) = viewport.child() else {
+        return;
+    };
+    let Some(point) = target.compute_point(&content, &gtk::graphene::Point::new(0.0, 0.0)) else {
         return;
     };
     let adjustment = scrolled.vadjustment();
@@ -764,7 +795,7 @@ fn run_find(app: &Rc<App>, needle: &str) {
         .and_then(|m| rendered.first_label(m.entry).cloned());
     drop(state);
     if let Some(target) = scroll_target {
-        scroll_to(&app.ui.scrolled, &target);
+        scroll_to(app, &target);
     }
     let mut state = app.state.borrow_mut();
     state.matches = matches;
@@ -802,7 +833,7 @@ fn cycle_find(app: &Rc<App>, forward: bool) {
         .and_then(|m| rendered.first_label(m.entry).cloned());
     drop(state);
     if let Some(target) = scroll_target {
-        scroll_to(&app.ui.scrolled, &target);
+        scroll_to(app, &target);
     }
     app.state.borrow_mut().active = active;
 }
