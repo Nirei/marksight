@@ -158,8 +158,9 @@ fn build(app: &gtk::Application, loader: mpsc::Sender<LoadMsg>) -> Rc<App> {
         .icon_name(APP_ID)
         .build();
 
-    let open_button = gtk::Button::with_label("Open");
+    let open_button = gtk::Button::from_icon_name("document-open-symbolic");
     open_button.set_tooltip_text(Some("Open a markdown file (Ctrl+O)"));
+    open_button.update_property(&[gtk::accessible::Property::Label("Open markdown file")]);
 
     let toc_button = gtk::ToggleButton::with_label("Contents");
     toc_button.set_tooltip_text(Some("Toggle the table of contents (F9)"));
