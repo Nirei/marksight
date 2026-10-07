@@ -14,7 +14,10 @@ fuzz_target!(|data: &[u8]| {
         if let Some(inlines) = inline_content(block) {
             let walk = markup::walk_inlines(inlines, &parsed, None);
             for segment in &walk.segments {
-                assert!(markup::is_well_formed(&segment.markup), "markup not well formed: {segment:?}");
+                assert!(
+                    markup::is_well_formed(&segment.markup),
+                    "markup not well formed: {segment:?}"
+                );
                 assert!(segment.char_start <= walk.text.chars().count());
             }
         }
