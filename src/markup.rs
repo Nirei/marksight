@@ -753,7 +753,9 @@ mod tests {
     fn well_formed_checker_accepts_our_markup() {
         assert!(is_well_formed("plain"));
         assert!(is_well_formed("<b>bold</b> and <i><tt>x</tt></i>"));
-        assert!(is_well_formed("<a href=\"https://x?a=1&amp;b=2\" title=\"t\">label</a>"));
+        assert!(is_well_formed(
+            "<a href=\"https://x?a=1&amp;b=2\" title=\"t\">label</a>"
+        ));
         assert!(is_well_formed("&lt;&amp;&gt;&quot;&apos;"));
         assert!(is_well_formed("<span background=\"#11223344\">hit</span>"));
     }

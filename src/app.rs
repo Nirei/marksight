@@ -518,21 +518,21 @@ impl App {
         self.state.borrow().doc.blocks.len()
     }
 
-    pub fn reload_path(&self, path: &Path) {
+    pub fn reload_path(self: &Rc<Self>, path: &Path) {
         if self.state.borrow().path.as_deref() == Some(path) {
             self.open_path(path);
         }
     }
 
-    pub fn open_path(&self, path: &Path) {
+    pub fn open_path(self: &Rc<Self>, path: &Path) {
         {
             let mut state = self.state.borrow_mut();
             state.path = Some(path.to_path_buf());
             state.matches.clear();
             state.active = None;
             state.find_pending = None;
-            state.watcher = None;
         }
+        self.start_watcher(path);
         let path = path.to_path_buf();
         let sender = self.loader.clone();
         std::thread::spawn(move || {
@@ -637,23 +637,23 @@ fn apply_doc(app: &Rc<App>, path: &Path, parsed: Document) {
     app.ui.toc_button.set_visible(has_toc);
     app.ui.match_counter.set_text("");
 
-    start_watcher(app, path);
-
     let needle = app.ui.search_entry.text().to_string();
     if app.ui.search_bar.is_search_mode() && !needle.trim().is_empty() {
         run_find(app, &needle);
     }
 }
 
-fn start_watcher(app: &Rc<App>, path: &Path) {
-    let app_for_reload = app.clone();
-    let watched = path.to_path_buf();
-    let watcher = FileWatcher::new(path, move || {
-        app_for_reload.reload_path(&watched);
-    });
-    match watcher {
-        Ok(watcher) => app.state.borrow_mut().watcher = Some(watcher),
-        Err(err) => eprintln!("markview: live reload unavailable: {err}"),
+impl App {
+    fn start_watcher(self: &Rc<Self>, path: &Path) {
+        let app_for_reload = self.clone();
+        let watched = path.to_path_buf();
+        let watcher = FileWatcher::new(path, move || {
+            app_for_reload.reload_path(&watched);
+        });
+        match watcher {
+            Ok(watcher) => self.state.borrow_mut().watcher = Some(watcher),
+            Err(err) => eprintln!("markview: live reload unavailable: {err}"),
+        }
     }
 }
 
@@ -680,6 +680,15 @@ fn rebuild_toc(app: &Rc<App>, headings: &[TocEntry]) {
         let row = gtk::ListBoxRow::new();
         row.set_child(Some(&label));
         row.set_css_classes(&["mv-toc-item"]);
+        let row_text = if text.is_empty() {
+            "(untitled heading)".to_owned()
+        } else {
+            text
+        };
+        row.update_property(&[gtk::accessible::Property::Label(&format!(
+            "Jump to {}",
+            row_text
+        ))]);
         app.ui.toc_list.append(&row);
     }
 }

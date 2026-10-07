@@ -188,9 +188,11 @@ fn pathological_documents_do_not_crash(mv: &std::rc::Rc<app::App>) {
     let path = std::env::temp_dir().join("markview-smoke-pathological.md");
     std::fs::write(&path, &pathological).unwrap();
     mv.open_path(&path);
-    assert!(pump_until(Duration::from_secs(5), || mv.visible_page() == "doc"));
-    pump(Duration::from_millis(200));
-    assert!(mv.label_group_count() > 0);
+    assert!(
+        pump_until(Duration::from_secs(5), || mv.label_group_count() > 100),
+        "pathological document never applied (groups={})",
+        mv.label_group_count()
+    );
     let _ = std::fs::remove_file(&path);
 }
 
@@ -198,13 +200,17 @@ fn live_reload_replaces_content(mv: &std::rc::Rc<app::App>) {
     let path = std::env::temp_dir().join("markview-smoke-reload.md");
     std::fs::write(&path, "# first\n\none paragraph\n").unwrap();
     mv.open_path(&path);
-    assert!(pump_until(Duration::from_secs(5), || mv.visible_page() == "doc"));
-    let initial = mv.current_doc_len();
+    assert!(
+        pump_until(Duration::from_secs(5), || mv.current_doc_len() == 2),
+        "first reload document never applied (len={})",
+        mv.current_doc_len()
+    );
 
     std::fs::write(&path, "# second\n\n1\n\n2\n\n3\n\n4\n\n5\n").unwrap();
     assert!(
-        pump_until(Duration::from_secs(10), || mv.current_doc_len() > initial),
-        "watcher-driven reload never changed the document"
+        pump_until(Duration::from_secs(10), || mv.current_doc_len() == 6),
+        "watcher-driven reload never changed the document (len={})",
+        mv.current_doc_len()
     );
     let _ = std::fs::remove_file(&path);
 }
