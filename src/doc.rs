@@ -7,9 +7,10 @@
 //! Raw HTML is deliberately dropped (never modeled), so nothing downstream can
 //! ever render it — the classic viewer XSS vector.
 
-use pulldown_cmark::{BlockQuoteKind, CodeBlockKind, Options, Parser, Tag, TagEnd};
+use pulldown_cmark::{CodeBlockKind, Options, Parser, Tag, TagEnd};
 
 pub use pulldown_cmark::Alignment;
+pub use pulldown_cmark::BlockQuoteKind;
 
 #[derive(Clone, Copy, PartialEq, Eq, Default, Debug)]
 pub struct Style {

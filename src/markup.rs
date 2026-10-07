@@ -24,6 +24,14 @@ pub struct Segment {
 pub struct Walk {
     pub text: String,
     pub segments: Vec<Segment>,
+    pub images: Vec<ImageInfo>,
+}
+
+#[derive(Clone, Debug)]
+pub struct ImageInfo {
+    pub url: String,
+    pub alt: String,
+    pub title: String,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -67,6 +75,7 @@ struct Walker<'a> {
     hl: Option<Highlight<'a>>,
     text: String,
     segments: Vec<Segment>,
+    images: Vec<ImageInfo>,
     chars: usize,
     markup: String,
     open_tags: Vec<String>,
@@ -80,6 +89,7 @@ impl<'a> Walker<'a> {
             hl,
             text: String::new(),
             segments: Vec::new(),
+            images: Vec::new(),
             chars: 0,
             markup: String::new(),
             open_tags: Vec::new(),
@@ -229,6 +239,7 @@ pub fn walk_inlines(inlines: &[Inline], footnotes: &Document, hl: Option<Highlig
     Walk {
         text: walker.text,
         segments: walker.segments,
+        images: walker.images,
     }
 }
 
@@ -255,13 +266,10 @@ fn walk_into(inlines: &[Inline], walker: &mut Walker<'_>) {
                 }
                 walker.close_tag();
             }
-            Inline::Image {
-                url: _,
-                alt,
-                title: _,
-            } => {
+            Inline::Image { url, alt, title } => {
                 walker.boundary();
                 walker.push_chars(alt);
+                walker.images.push(ImageInfo { url: url.clone(), alt: alt.clone(), title: title.clone() });
             }
             Inline::FootnoteRef { label } => walker.footnote_ref(label),
         }

@@ -10,4 +10,10 @@ pub mod find;
 pub mod markup;
 
 #[cfg(feature = "ui")]
+pub mod app;
+
+#[cfg(feature = "ui")]
+pub mod render;
+
+#[cfg(feature = "ui")]
 pub mod watch;

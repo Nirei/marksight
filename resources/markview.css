@@ -1,0 +1,217 @@
+/* markview — theme-native styling.
+ *
+ * Only theme-defined named colors and relative sizes are used, so any
+ * installed GTK theme (Mint-Y, Adwaita, …) restyles the app with zero
+ * per-theme work. No literal colors appear here.
+ */
+
+.mv-content {
+    padding: 24px 32px 48px 32px;
+}
+
+.mv-h1 {
+    font-size: 1.9em;
+    font-weight: 700;
+    margin-top: 0.4em;
+    margin-bottom: 0.4em;
+}
+
+.mv-h2 {
+    font-size: 1.55em;
+    font-weight: 700;
+    margin-top: 0.7em;
+    margin-bottom: 0.35em;
+}
+
+.mv-h3 {
+    font-size: 1.3em;
+    font-weight: 600;
+    margin-top: 0.6em;
+    margin-bottom: 0.3em;
+}
+
+.mv-h4 {
+    font-size: 1.15em;
+    font-weight: 600;
+    margin-top: 0.55em;
+    margin-bottom: 0.25em;
+}
+
+.mv-h5 {
+    font-size: 1.05em;
+    font-weight: 600;
+    margin-top: 0.5em;
+    margin-bottom: 0.25em;
+}
+
+.mv-h6 {
+    font-size: 1em;
+    font-weight: 600;
+    margin-top: 0.5em;
+    margin-bottom: 0.25em;
+}
+
+.mv-para {
+    margin-top: 0.1em;
+    margin-bottom: 0.1em;
+}
+
+.mv-code {
+    font-family: monospace;
+    background-color: alpha(@theme_fg_color, 0.06);
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+
+.mv-quote {
+    border-left: 3px solid alpha(@theme_fg_color, 0.3);
+    background-color: alpha(@theme_fg_color, 0.04);
+    border-radius: 4px;
+    padding: 8px 12px;
+}
+
+.mv-alert {
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-top: 2px;
+    margin-bottom: 2px;
+}
+
+.mv-alert-title {
+    font-weight: 700;
+}
+
+.mv-alert-note {
+    border-left: 4px solid @theme_selected_bg_color;
+    background-color: alpha(@theme_selected_bg_color, 0.08);
+}
+
+.mv-alert-tip {
+    border-left: 4px solid @success_color;
+    background-color: alpha(@success_color, 0.10);
+}
+
+.mv-alert-important {
+    border-left: 4px solid @warning_color;
+    background-color: alpha(@warning_color, 0.10);
+}
+
+.mv-alert-warning {
+    border-left: 4px solid @warning_color;
+    background-color: alpha(@warning_color, 0.14);
+}
+
+.mv-alert-caution {
+    border-left: 4px solid @error_color;
+    background-color: alpha(@error_color, 0.10);
+}
+
+.mv-list {
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+
+.mv-list-nested {
+    margin-left: 18px;
+}
+
+.mv-list-marker {
+    color: alpha(@theme_fg_color, 0.75);
+    min-width: 22px;
+}
+
+.mv-table {
+    margin-top: 6px;
+    margin-bottom: 6px;
+}
+
+.mv-cell {
+    padding: 3px 4px;
+}
+
+.mv-cell-head {
+    font-weight: 700;
+    border-bottom: 2px solid alpha(@theme_fg_color, 0.35);
+}
+
+.mv-rule {
+    margin-top: 12px;
+    margin-bottom: 12px;
+}
+
+.mv-image {
+    border-radius: 6px;
+    margin-top: 6px;
+    margin-bottom: 6px;
+}
+
+.mv-image-fallback {
+    color: alpha(@theme_fg_color, 0.65);
+    font-style: italic;
+}
+
+.mv-footnote {
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+
+.mv-toc-column {
+    border-right: 1px solid @borders;
+}
+
+.mv-toc {
+    padding: 8px 4px;
+}
+
+.mv-toc-row {
+    padding: 5px 8px;
+    border-radius: 6px;
+}
+
+.mv-toc-item {
+    border-radius: 6px;
+}
+
+.mv-search-box {
+    padding: 6px 12px;
+}
+
+.mv-match-counter {
+    color: alpha(@theme_fg_color, 0.6);
+    font-feature-settings: "tnum";
+}
+
+.mv-title {
+    font-weight: 700;
+}
+
+.mv-path {
+    font-size: 0.85em;
+    color: alpha(@theme_fg_color, 0.6);
+}
+
+.mv-welcome-title {
+    font-size: 2em;
+    font-weight: 700;
+}
+
+.mv-welcome-subtitle {
+    color: alpha(@theme_fg_color, 0.7);
+}
+
+.mv-welcome-button {
+    margin-top: 12px;
+}
+
+.mv-welcome-hint {
+    color: alpha(@theme_fg_color, 0.5);
+    font-size: 0.9em;
+}
+
+.mv-probe-hit {
+    color: alpha(@theme_selected_bg_color, 0.45);
+}
+
+.mv-probe-active {
+    color: @theme_selected_bg_color;
+}
