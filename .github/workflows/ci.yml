@@ -72,9 +72,11 @@ jobs:
           sudo apt-get install -y libgtk-4-dev pkg-config xvfb metacity
       - name: Run GUI smoke suite
         run: |
-          xvfb-run -a -s "-screen 0 1280x900x24" metacity --replace &
-          sleep 2
-          DISPLAY=:99 cargo test --test gui_smoke -- --nocapture
+          xvfb-run -n 99 -s "-screen 0 1280x900x24" bash -c '
+            metacity --replace &
+            sleep 2
+            DISPLAY=:99 cargo test --test gui_smoke -- --nocapture
+          '
         env:
           GSK_RENDERER: cairo
 
