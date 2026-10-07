@@ -1,0 +1,133 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - run: cargo fmt --check
+
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Install GTK development packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-4-dev pkg-config
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo clippy --no-default-features -- -D warnings
+
+  core:
+    name: pure core (no GTK)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --no-default-features
+
+  tests:
+    name: unit + snapshots + property + cli
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install GTK development packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-4-dev pkg-config
+      - run: cargo test --lib --test snapshots --test property --test cli
+
+  gui:
+    name: gui smoke (Xvfb)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install GTK + virtual display
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-4-dev pkg-config xvfb metacity
+      - name: Run GUI smoke suite
+        run: |
+          xvfb-run -a -s "-screen 0 1280x900x24" metacity --replace &
+          sleep 2
+          DISPLAY=:99 cargo test --test gui_smoke -- --nocapture
+        env:
+          GSK_RENDERER: cairo
+
+  budget:
+    name: release build + size budget
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install GTK development packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-4-dev pkg-config
+      - run: cargo build --release
+      - name: Stripped binary must stay under 15 MB
+        run: |
+          STRIPPED=$(stat -c%s target/release/markview)
+          cp target/release/markview /tmp/markview.stripped
+          strip /tmp/markview.stripped
+          BYTES=$(stat -c%s /tmp/markview.stripped)
+          echo "stripped size: $BYTES bytes"
+          LIMIT=$((15 * 1024 * 1024))
+          test "$BYTES" -le "$LIMIT"
+
+  doc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install GTK development packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-4-dev pkg-config
+      - run: cargo doc --no-deps
+        env:
+          RUSTDOCFLAGS: -D warnings
+
+  fuzz-smoke:
+    name: fuzz smoke (60s per target)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-fuzz
+      - name: fuzz_model
+        run: cargo fuzz run fuzz_model -s none -- -max_total_time=60
+        working-directory: fuzz
+      - name: fuzz_markup
+        run: cargo fuzz run fuzz_markup -s none -- -max_total_time=60
+        working-directory: fuzz
+      - name: fuzz_find
+        run: cargo fuzz run fuzz_find -s none -- -max_total_time=60
+        working-directory: fuzz

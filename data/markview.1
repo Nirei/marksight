@@ -1,0 +1,47 @@
+.TH MARKVIEW 1 "2026-10-07" "markview 0.1.0" "User Commands"
+.SH NAME
+markview \- minimal, theme-native markdown viewer
+.SH SYNOPSIS
+.B markview
+.RI [ FILE ]
+.SH DESCRIPTION
+.B markview
+renders a Markdown document with native GTK 4 widgets, following the desktop
+theme automatically. It implements CommonMark plus GitHub-flavored tables,
+task lists, footnotes, strikethrough and alerts. Raw HTML in documents is
+dropped, never rendered.
+.PP
+The viewed file is watched for changes and re-rendered shortly after every
+save. A table-of-contents sidebar and find-in-document are built in.
+.SH OPTIONS
+.TP
+.BR \-h ", " \-\-help
+Print usage and exit.
+.TP
+.BR \-V ", " \-\-version
+Print version and exit.
+.SH KEYBOARD
+.TP
+.B Ctrl+O
+Open a file
+.TP
+.B Ctrl+F
+Find in document
+.TP
+.B Enter / Shift+Enter
+Next / previous match
+.TP
+.B F9
+Toggle the contents sidebar
+.TP
+.B Ctrl+W, Ctrl+Q
+Close window / quit
+.SH FILES
+Opened through the file portal, so markview needs no direct filesystem
+permissions when sandboxed.
+.SH BUGS
+Report bugs at
+.UR https://github.com/markview/markview/issues
+.UE .
+.SH LICENSE
+MIT OR Apache-2.0, at your option.

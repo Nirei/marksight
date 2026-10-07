@@ -1,0 +1,47 @@
+# Maintainer: markview contributors <markview@noreply.github.com>
+pkgname=markview
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='Minimal, theme-native markdown viewer'
+arch=('x86_64')
+url='https://github.com/markview/markview'
+license=('MIT' 'Apache-2.0')
+depends=('gtk4' 'gcc-libs')
+makedepends=('cargo')
+checkdepends=('xvfb' 'metacity')
+source=("${url}/archive/refs/tags/v${pkgver}.tar.gz")
+sha256sums=('REPLACE_AT_RELEASE')
+options=('!lto')
+
+prepare() {
+  cd "${pkgname}-${pkgver}"
+  export RUSTUP_TOOLCHAIN=stable
+  cargo fetch --locked --target "$CARCH-unknown-linux-gnu"
+}
+
+build() {
+  cd "${pkgname}-${pkgver}"
+  export RUSTUP_TOOLCHAIN=stable
+  export CARGO_TARGET_DIR=target
+  cargo build --frozen --release
+}
+
+check() {
+  cd "${pkgname}-${pkgver}"
+  export RUSTUP_TOOLCHAIN=stable
+  cargo test --frozen --lib --test snapshots --test property --test cli
+}
+
+package() {
+  cd "${pkgname}-${pkgver}"
+  install -Dm755 "target/release/${pkgname}" "${pkgdir}/usr/bin/${pkgname}"
+  install -Dm644 data/io.github.markview.Markview.desktop \
+    "${pkgdir}/usr/share/applications/io.github.markview.Markview.desktop"
+  install -Dm644 data/io.github.markview.Markview.metainfo.xml \
+    "${pkgdir}/usr/share/metainfo/io.github.markview.Markview.metainfo.xml"
+  install -Dm644 data/icons/hicolor/scalable/apps/io.github.markview.Markview.svg \
+    "${pkgdir}/usr/share/icons/hicolor/scalable/apps/io.github.markview.Markview.svg"
+  install -Dm644 data/markview.1 "${pkgdir}/usr/share/man/man1/markview.1"
+  install -Dm644 LICENSE-MIT "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE-MIT"
+  install -Dm644 LICENSE-APACHE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE-APACHE"
+}

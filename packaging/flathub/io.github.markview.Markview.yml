@@ -1,0 +1,50 @@
+# Flathub manifest for markview.
+#
+# Submission checklist (do at submission time, not now):
+#   * pick the current stable org.gnome.Platform runtime version
+#   * generate cargo-sources.json with flatpak-cargo-generator
+#     (https://github.com/flatpak/flatpak-cargo-generator)
+#   * add real screenshots to data/appstream/screenshots and reference
+#     them from the metainfo
+#   * run `flatpak run org.flathub.flatpak-external-data-checker` and
+#     `appstreamcli validate`
+#
+# File access is exclusively through the portal (GtkFileDialog +
+# document portal); note the absence of --filesystem.
+
+app-id: io.github.markview.Markview
+runtime: org.gnome.Platform
+runtime-version: "48"
+sdk: org.gnome.Sdk
+command: markview
+
+finish-args:
+  - --device=dri
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+
+cleanup:
+  - /share/man
+
+modules:
+  - name: markview
+    buildsystem: simple
+    build-commands:
+      - cargo --offline build --release
+      - install -Dm755 target/release/markview /app/bin/markview
+      - install -Dm644 data/io.github.markview.Markview.desktop /app/share/applications/io.github.markview.Markview.desktop
+      - install -Dm644 data/io.github.markview.Markview.metainfo.xml /app/share/metainfo/io.github.markview.Markview.metainfo.xml
+      - install -Dm644 data/icons/hicolor/scalable/apps/io.github.markview.Markview.svg /app/share/icons/hicolor/scalable/apps/io.github.markview.Markview.svg
+      - install -Dm644 data/markview.1 /app/share/man/man1/markview.1
+    sources:
+      - type: archive
+        url: https://github.com/markview/markview/archive/refs/tags/v0.1.0.tar.gz
+        sha256: REPLACE_AT_SUBMISSION
+        x-checker-data:
+          type: json
+          url: https://api.github.com/repos/markview/markview/releases/latest
+          version-query: .tag_name
+          url-query: .tarball_url
+      - type: file
+        path: cargo-sources.json

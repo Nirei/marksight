@@ -1,0 +1,30 @@
+Source: markview
+Section: utils
+Priority: optional
+Maintainer: The markview contributors <markview@example.org>
+Rules-Requires-Root: no
+Build-Depends:
+ debhelper-compat (= 13),
+ cargo:native,
+ rustc:native,
+ libgtk-4-dev (>= 4.10),
+Standards-Version: 4.7.0
+Vcs-Git: https://github.com/markview/markview.git
+Vcs-Browser: https://github.com/markview/markview
+Homepage: https://github.com/markview/markview
+
+Package: markview
+Architecture: any
+Depends:
+ ${misc:Depends},
+ ${shlibs:Depends},
+Built-Using: ${cargo:Built-Using}
+Description: minimal, theme-native markdown viewer
+ markview renders Markdown documents with native GTK 4 widgets, following
+ the desktop theme automatically — light or dark, Mint-Y or Adwaita — with
+ no configuration. It supports CommonMark plus GitHub-flavored tables, task
+ lists, footnotes, strikethrough and alerts, watches files for live reload,
+ and provides a table of contents and find-in-document.
+ .
+ Raw HTML in documents is dropped rather than rendered, and the program has
+ no JavaScript engine, no network access and no unsafe code.

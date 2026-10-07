@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=markview
+GenericName=Markdown Viewer
+Comment=View Markdown files with your system theme
+Comment[es]=Ver archivos Markdown con el tema del sistema
+Exec=markview %f
+Icon=io.github.markview.Markview
+Terminal=false
+Categories=Utility;TextViewer;Viewer;
+MimeType=text/markdown;text/x-markdown;
+StartupNotify=true
+StartupWMClass=io.github.markview.Markview
+SingleMainWindow=true

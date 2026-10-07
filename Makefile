@@ -1,0 +1,31 @@
+PREFIX ?= /usr/local
+BINDIR ?= $(PREFIX)/bin
+DATADIR ?= $(PREFIX)/share
+APP_ID ?= io.github.markview.Markview
+
+.PHONY: all install uninstall clean check
+
+all:
+	cargo build --release
+
+check:
+	cargo test --lib --test snapshots --test property --test cli
+	cargo clippy --all-targets -- -D warnings
+
+install: all
+	install -Dm755 target/release/markview -t $(DESTDIR)$(BINDIR)
+	install -Dm644 data/$(APP_ID).desktop -t $(DESTDIR)$(DATADIR)/applications
+	install -Dm644 data/$(APP_ID).metainfo.xml -t $(DESTDIR)$(DATADIR)/metainfo
+	install -Dm644 data/icons/hicolor/scalable/apps/$(APP_ID).svg \
+		$(DESTDIR)$(DATADIR)/icons/hicolor/scalable/apps/$(APP_ID).svg
+	install -Dm644 data/markview.1 -t $(DESTDIR)$(DATADIR)/man/man1
+
+uninstall:
+	rm -f $(DESTDIR)$(BINDIR)/markview
+	rm -f $(DESTDIR)$(DATADIR)/applications/$(APP_ID).desktop
+	rm -f $(DESTDIR)$(DATADIR)/metainfo/$(APP_ID).metainfo.xml
+	rm -f $(DESTDIR)$(DATADIR)/icons/hicolor/scalable/apps/$(APP_ID).svg
+	rm -f $(DESTDIR)$(DATADIR)/man/man1/markview.1
+
+clean:
+	cargo clean
