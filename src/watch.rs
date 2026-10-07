@@ -81,7 +81,7 @@ impl FileWatcher {
         });
 
         Ok(FileWatcher {
-            watcher,
+            _watcher: watcher,
             poll: Some(poll),
         })
     }
