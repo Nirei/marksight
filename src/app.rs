@@ -63,6 +63,8 @@ struct State {
     watcher: Option<FileWatcher>,
     toc_targets: Vec<gtk::Widget>,
     find_pending: Option<std::time::Instant>,
+    find_needle: String,
+    find_active: Option<usize>,
     scroll_generation: u64,
 }
 
@@ -78,6 +80,8 @@ impl State {
             watcher: None,
             toc_targets: Vec::new(),
             find_pending: None,
+            find_needle: String::new(),
+            find_active: None,
             scroll_generation: 0,
         }
     }
@@ -804,6 +808,8 @@ fn run_find(app: &Rc<App>, needle: &str) {
     let matches = find::find(&state.index, needle);
     let active = if matches.is_empty() {
         None
+    } else if needle == state.find_needle && state.find_active.is_some_and(|a| a < matches.len()) {
+        state.find_active
     } else {
         find::cycle(&matches, None, true)
     };
@@ -835,6 +841,8 @@ fn run_find(app: &Rc<App>, needle: &str) {
     let mut state = app.state.borrow_mut();
     state.matches = matches;
     state.active = active;
+    state.find_needle = needle.to_string();
+    state.find_active = active;
 }
 
 fn cycle_find(app: &Rc<App>, forward: bool) {
@@ -870,7 +878,9 @@ fn cycle_find(app: &Rc<App>, forward: bool) {
     if let Some(target) = scroll_target {
         scroll_to(app, &target);
     }
-    app.state.borrow_mut().active = active;
+    let mut state = app.state.borrow_mut();
+    state.active = active;
+    state.find_active = active;
 }
 
 fn probe_colors(app: &Rc<App>) -> (String, String) {
