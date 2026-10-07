@@ -6,4 +6,5 @@
 //! unit-tested, property-tested, and fuzzed without a display server.
 
 pub mod doc;
+pub mod find;
 pub mod markup;
