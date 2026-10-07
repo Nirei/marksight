@@ -1,0 +1,5 @@
+/target
+/fuzz/target
+/fuzz/corpus
+/fuzz/artifacts
+*.snap.new

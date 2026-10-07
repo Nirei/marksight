@@ -1,0 +1,31 @@
+[package]
+name = "markview"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "A minimal, theme-native markdown viewer"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/markview/markview"
+homepage = "https://github.com/markview/markview"
+keywords = ["markdown", "viewer", "gtk", "commonmark", "gfm"]
+categories = ["gui", "text-processing"]
+readme = "README.md"
+exclude = ["/packaging", "/.github", "/fuzz"]
+
+[dependencies]
+gtk4 = { version = "0.11", features = ["v4_10"] }
+pulldown-cmark = { version = "0.13", default-features = false, features = ["simd"] }
+notify = "8"
+
+[dev-dependencies]
+proptest = "1.11"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+
+[profile.release]
+lto = "thin"
+strip = true
