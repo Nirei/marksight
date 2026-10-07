@@ -16,7 +16,7 @@ use std::time::{Duration, Instant};
 use gtk::glib;
 use notify::{Event, EventKind, RecursiveMode, Watcher as _};
 
-const DEBOUNCE_MS: Duration = Duration::from_millis(150);
+pub const DEBOUNCE_MS: Duration = Duration::from_millis(150);
 const POLL: Duration = Duration::from_millis(50);
 
 pub struct FileWatcher {

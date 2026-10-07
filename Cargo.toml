@@ -24,6 +24,10 @@ ui = ["dep:gtk"]
 [dev-dependencies]
 proptest = "1.11"
 
+[[bin]]
+name = "markview"
+required-features = ["ui"]
+
 [lints.rust]
 unsafe_code = "forbid"
 
