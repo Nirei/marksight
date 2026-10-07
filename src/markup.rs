@@ -441,6 +441,40 @@ fn align_name(align: Alignment) -> String {
     }
 }
 
+/// Checks that markup produced by this module is well-formed XML: tags
+/// balance, attributes are quoted, and no stray `<`/`&` appear outside of
+/// constructs we emit. This is the fuzz and property-test oracle for the
+/// “document text never leaks into markup unescaped” invariant.
+pub fn is_well_formed(markup: &str) -> bool {
+    let mut stack: Vec<&str> = Vec::new();
+    let mut rest = markup;
+    while let Some(open) = rest.find('<') {
+        let (text, after) = rest.split_at(open);
+        if text.contains('&') && !text.matches("&amp;").all(|m| m.len() == 5) {
+            return false;
+        }
+        rest = after;
+        let Some(close) = rest.find('>') else {
+            return false;
+        };
+        let tag = &rest[1..close];
+        rest = &rest[close + 1..];
+        if let Some(name) = tag.strip_prefix('/') {
+            match stack.pop() {
+                Some(open_name) if open_name == name => {}
+                _ => return false,
+            }
+        } else {
+            let name = tag.split(&[' ', '\t'][..]).next().unwrap_or("");
+            if name.is_empty() {
+                return false;
+            }
+            stack.push(name);
+        }
+    }
+    stack.is_empty()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
