@@ -1,0 +1,6 @@
+/target
+/artifacts
+/corpus/**/
+!/corpus/fuzz_model/
+!/corpus/fuzz_markup/
+!/corpus/fuzz_find/

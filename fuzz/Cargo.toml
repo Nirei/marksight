@@ -1,0 +1,36 @@
+[package]
+name = "markview-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.markview]
+path = ".."
+default-features = false
+
+[[bin]]
+name = "fuzz_model"
+path = "fuzz_targets/fuzz_model.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_markup"
+path = "fuzz_targets/fuzz_markup.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_find"
+path = "fuzz_targets/fuzz_find.rs"
+test = false
+doc = false
+bench = false

@@ -442,16 +442,22 @@ fn align_name(align: Alignment) -> String {
 }
 
 /// Checks that markup produced by this module is well-formed XML: tags
-/// balance, attributes are quoted, and no stray `<`/`&` appear outside of
-/// constructs we emit. This is the fuzz and property-test oracle for the
+/// balance, attributes are quoted, and every `&` introduces one of the few
+/// entities we emit. This is the fuzz and property-test oracle for the
 /// “document text never leaks into markup unescaped” invariant.
 pub fn is_well_formed(markup: &str) -> bool {
+    const ENTITIES: [&str; 5] = ["&amp;", "&lt;", "&gt;", "&quot;", "&apos;"];
+    let valid_entity = |tail: &str| ENTITIES.iter().any(|e| tail.starts_with(e));
     let mut stack: Vec<&str> = Vec::new();
     let mut rest = markup;
     while let Some(open) = rest.find('<') {
         let (text, after) = rest.split_at(open);
-        if text.contains('&') && !text.matches("&amp;").all(|m| m.len() == 5) {
-            return false;
+        let mut amp_scan = text;
+        while let Some(at) = amp_scan.find('&') {
+            if !valid_entity(&amp_scan[at..]) {
+                return false;
+            }
+            amp_scan = &amp_scan[at + 1..];
         }
         rest = after;
         let Some(close) = rest.find('>') else {
@@ -471,6 +477,13 @@ pub fn is_well_formed(markup: &str) -> bool {
             }
             stack.push(name);
         }
+    }
+    let mut amp_scan = rest;
+    while let Some(at) = amp_scan.find('&') {
+        if !valid_entity(&amp_scan[at..]) {
+            return false;
+        }
+        amp_scan = &amp_scan[at + 1..];
     }
     stack.is_empty()
 }
@@ -734,6 +747,26 @@ mod tests {
             }
         }
         out
+    }
+
+    #[test]
+    fn well_formed_checker_accepts_our_markup() {
+        assert!(is_well_formed("plain"));
+        assert!(is_well_formed("<b>bold</b> and <i><tt>x</tt></i>"));
+        assert!(is_well_formed("<a href=\"https://x?a=1&amp;b=2\" title=\"t\">label</a>"));
+        assert!(is_well_formed("&lt;&amp;&gt;&quot;&apos;"));
+        assert!(is_well_formed("<span background=\"#11223344\">hit</span>"));
+    }
+
+    #[test]
+    fn well_formed_checker_rejects_broken_markup() {
+        assert!(!is_well_formed("<b>unclosed"));
+        assert!(!is_well_formed("</b>stray-close"));
+        assert!(!is_well_formed("<b><i>crossed</b></i>"));
+        assert!(!is_well_formed("raw & ampersand"));
+        assert!(!is_well_formed("unfinished &"));
+        assert!(!is_well_formed("<"));
+        assert!(!is_well_formed("<b"));
     }
 
     fn strip_tags(markup: &str) -> String {
