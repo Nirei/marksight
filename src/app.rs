@@ -27,6 +27,7 @@ use crate::watch::FileWatcher;
 pub const APP_ID: &str = "io.github.marksight.Marksight";
 
 const CSS: &str = include_str!("../resources/marksight.css");
+const LOGO_SVG: &str = include_str!("../data/logo/marksight-logo.svg");
 const FIND_DEBOUNCE: Duration = Duration::from_millis(120);
 const FIND_POLL: Duration = Duration::from_millis(40);
 const LOAD_POLL: Duration = Duration::from_millis(40);
@@ -446,7 +447,10 @@ fn show_about(window: &gtk::ApplicationWindow) {
     about.set_license(Some(
         "Licensed under either of MIT or Apache-2.0, at your option.",
     ));
-    about.set_logo_icon_name(Some(APP_ID));
+    match gdk::Texture::from_bytes(&glib::Bytes::from_static(LOGO_SVG.as_bytes())) {
+        Ok(texture) => about.set_logo(Some(&texture)),
+        Err(_) => about.set_logo_icon_name(Some(APP_ID)),
+    }
     about.set_website(Some("https://github.com/marksight/marksight"));
     about.present();
 }
