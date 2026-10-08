@@ -12,7 +12,8 @@ check:
 	cargo test --lib --test snapshots --test property --test cli
 	cargo clippy --all-targets -- -D warnings
 
-install: all
+install:
+	@test -x target/release/marksight || { echo "no release binary — run 'make' as your user first" >&2; exit 1; }
 	install -Dm755 target/release/marksight -t $(DESTDIR)$(BINDIR)
 	install -Dm644 data/$(APP_ID).desktop -t $(DESTDIR)$(DATADIR)/applications
 	install -Dm644 data/$(APP_ID).metainfo.xml -t $(DESTDIR)$(DATADIR)/metainfo
