@@ -1,3 +1,5 @@
+<p align="center"><img src="data/logo/marksight-logo.svg" width="208" alt="marksight logo"></p>
+
 # marksight
 
 A minimal, theme-native markdown viewer.
