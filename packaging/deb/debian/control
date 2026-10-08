@@ -5,6 +5,7 @@ Maintainer: The marksight contributors <marksight@example.org>
 Rules-Requires-Root: no
 Build-Depends:
  debhelper-compat (= 13),
+ dh-cargo,
  cargo:native,
  rustc:native,
  libgtk-4-dev (>= 4.10),

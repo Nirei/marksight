@@ -102,6 +102,25 @@ jobs:
           LIMIT=$((15 * 1024 * 1024))
           test "$BYTES" -le "$LIMIT"
 
+  deb:
+    name: build .deb package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install packaging dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y devscripts debhelper dh-cargo libgtk-4-dev pkg-config
+      - name: Build package
+        run: packaging/deb/build-local.sh
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: marksight-deb
+          path: packaging/deb/*.deb
+
   doc:
     runs-on: ubuntu-latest
     steps:
