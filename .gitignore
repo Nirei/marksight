@@ -3,3 +3,4 @@
 /fuzz/corpus
 /fuzz/artifacts
 *.snap.new
+/packaging/deb/*.deb

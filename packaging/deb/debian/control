@@ -3,11 +3,11 @@ Section: utils
 Priority: optional
 Maintainer: The marksight contributors <marksight@example.org>
 Rules-Requires-Root: no
+# Built with the cargo available in PATH (rustup locally, distro cargo on
+# buildds); Mint/Ubuntu 24.04's rustc 1.75 is too old for edition 2024, so
+# dh-cargo's hardcoded /usr/share/cargo/bin/cargo is deliberately not used.
 Build-Depends:
  debhelper-compat (= 13),
- dh-cargo,
- cargo:native,
- rustc:native,
  libgtk-4-dev (>= 4.10),
 Standards-Version: 4.7.0
 Vcs-Git: https://github.com/marksight/marksight.git
@@ -19,7 +19,6 @@ Architecture: any
 Depends:
  ${misc:Depends},
  ${shlibs:Depends},
-Built-Using: ${cargo:Built-Using}
 Description: minimal, theme-native markdown viewer
  marksight renders Markdown documents with native GTK 4 widgets, following
  the desktop theme automatically — light or dark, Mint-Y or Adwaita — with

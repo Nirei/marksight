@@ -1,15 +1,23 @@
 #!/usr/bin/make -f
 
+CARGO ?= $(shell cat debian/cargo.path 2>/dev/null || command -v cargo 2>/dev/null || echo cargo)
+export PATH := $(dir $(CARGO)):$(PATH)
+
 %:
-	dh $@ --buildsystem cargo
+	dh $@
+
+override_dh_auto_clean:
+	$(CARGO) clean
+
+override_dh_auto_build:
+	$(CARGO) build --release --locked
+
+override_dh_auto_test:
+	$(CARGO) test --release --locked --lib --test snapshots --test property --test cli
 
 override_dh_auto_install:
-	dh_auto_install
-	install -Dm644 data/io.github.marksight.Marksight.desktop \
-		debian/marksight/usr/share/applications/io.github.marksight.Marksight.desktop
-	install -Dm644 data/io.github.marksight.Marksight.metainfo.xml \
-		debian/marksight/usr/share/metainfo/io.github.marksight.Marksight.metainfo.xml
-	install -Dm644 data/icons/hicolor/scalable/apps/io.github.marksight.Marksight.svg \
-		debian/marksight/usr/share/icons/hicolor/scalable/apps/io.github.marksight.Marksight.svg
-	install -Dm644 data/marksight.1 \
-		debian/marksight/usr/share/man/man1/marksight.1
+	install -Dm755 target/release/marksight debian/marksight/usr/bin/marksight
+	install -Dm644 data/io.github.marksight.Marksight.desktop debian/marksight/usr/share/applications/io.github.marksight.Marksight.desktop
+	install -Dm644 data/io.github.marksight.Marksight.metainfo.xml debian/marksight/usr/share/metainfo/io.github.marksight.Marksight.metainfo.xml
+	install -Dm644 data/icons/hicolor/scalable/apps/io.github.marksight.Marksight.svg debian/marksight/usr/share/icons/hicolor/scalable/apps/io.github.marksight.Marksight.svg
+	install -Dm644 data/marksight.1 debian/marksight/usr/share/man/man1/marksight.1
