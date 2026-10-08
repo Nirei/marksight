@@ -50,6 +50,13 @@ make
 sudo make install
 ```
 
+Or build a proper package (needs `devscripts debhelper dh-cargo`):
+
+```sh
+make deb                                   # -> packaging/deb/marksight_*.deb
+sudo apt install ./packaging/deb/marksight_*.deb
+```
+
 ### Distro packages
 
 | Channel | Status |

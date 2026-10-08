@@ -3,7 +3,7 @@ BINDIR ?= $(PREFIX)/bin
 DATADIR ?= $(PREFIX)/share
 APP_ID ?= io.github.marksight.Marksight
 
-.PHONY: all install uninstall clean check
+.PHONY: all install uninstall clean check deb
 
 all:
 	cargo build --release
@@ -27,6 +27,9 @@ uninstall:
 	rm -f $(DESTDIR)$(DATADIR)/metainfo/$(APP_ID).metainfo.xml
 	rm -f $(DESTDIR)$(DATADIR)/icons/hicolor/scalable/apps/$(APP_ID).svg
 	rm -f $(DESTDIR)$(DATADIR)/man/man1/marksight.1
+
+deb:
+	packaging/deb/build-local.sh
 
 clean:
 	cargo clean
