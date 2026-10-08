@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build a marksight .deb from the committed tree.
+# Build a marksight .deb from the working tree.
 #
 # One-time setup on a Debian/Ubuntu/Mint machine:
 #   sudo apt install devscripts debhelper dh-cargo libgtk-4-dev
@@ -25,7 +25,14 @@ work="$(mktemp -d)"
 parent="$(dirname "$work")"
 trap 'rm -rf "$work"' EXIT
 
-git archive --format=tar HEAD | tar -x -C "$work"
+tar \
+    --exclude=./target \
+    --exclude=./.git \
+    --exclude=./.pi \
+    --exclude=./fuzz/target \
+    --exclude=./fuzz/corpus \
+    --exclude='./packaging/deb/*.deb' \
+    -cf - . | tar -xf - -C "$work"
 cp -r packaging/deb/debian "$work/debian"
 
 echo "building marksight_${version}_${arch}.deb in $work"
