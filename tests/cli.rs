@@ -3,7 +3,7 @@
 use std::process::Command;
 
 fn binary() -> &'static str {
-    env!("CARGO_BIN_EXE_markview")
+    env!("CARGO_BIN_EXE_marksight")
 }
 
 #[test]
@@ -12,7 +12,7 @@ fn version_prints_and_exits_clean() {
     assert!(out.status.success());
     assert_eq!(
         String::from_utf8_lossy(&out.stdout).trim(),
-        format!("markview {}", env!("CARGO_PKG_VERSION"))
+        format!("marksight {}", env!("CARGO_PKG_VERSION"))
     );
 }
 
@@ -22,7 +22,7 @@ fn help_prints_usage() {
     assert!(out.status.success());
     let text = String::from_utf8_lossy(&out.stdout);
     assert!(
-        text.contains("Usage: markview [FILE]"),
+        text.contains("Usage: marksight [FILE]"),
         "help text missing usage: {text}"
     );
     assert!(text.contains("--version"));

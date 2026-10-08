@@ -8,9 +8,9 @@
 
 use proptest::{collection, prelude::*};
 
-use markview::doc::{self, Block, Document, Inline};
-use markview::find;
-use markview::markup;
+use marksight::doc::{self, Block, Document, Inline};
+use marksight::find;
+use marksight::markup;
 
 fn plain() -> impl Strategy<Value = String> {
     "[a-zA-Z0-9 äöüß✓&<>\"'`.~*_\\[\\]()#>|-]{1,24}"

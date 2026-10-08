@@ -1,6 +1,6 @@
 //! Shared fuzzing helper: every block of a document, in tree order.
 
-use markview::doc::{Block, Document};
+use marksight::doc::{Block, Document};
 
 pub fn all_blocks(doc: &Document) -> Vec<&Block> {
     let mut out = Vec::new();

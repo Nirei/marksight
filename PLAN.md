@@ -1,4 +1,6 @@
-# markview — a minimal, theme-native markdown viewer
+# marksight — a minimal, theme-native markdown viewer
+
+> Renamed from “markview” (2026-10): the name is taken on crates.io by an active Rust terminal markdown viewer (March 2026), which would collide head-on in the same registry and category. Evaluated `markeye` (crates.io/Flathub free, but a dormant 2022 Electron markdown previewer shares the name on GitHub) and chose `marksight`: free on crates.io and Flathub, no known same-kind namesakes.
 
 > Status: planning · Target stack: Rust + GTK4 (no libadwaita, no WebKit)
 > Scope: open a markdown file → render to native widgets → live reload, TOC, find
@@ -157,7 +159,7 @@ Dependencies: `gtk4`, `pulldown-cmark`, `notify`, `glib` (transitively required)
 
 ## 10. Open verification checklist (before M0)
 
-- [x] `markview` name availability: placeholder app-ID `io.github.markview.Markview`; verify on crates.io/Flathub at submission time (a `markview.nvim` plugin exists in a different ecosystem — no legal issue).
+- [x] Name availability resolved: **`marksight`** — crates.io and Flathub free (verified 2026-10). `markview` rejected: active Rust markdown viewer took it on crates.io; `markeye` rejected: dormant Electron namesake on GitHub. App-ID `io.github.marksight.Marksight`.
 - [x] Pin exact `pulldown-cmark` / `gtk4` crate versions: `pulldown-cmark 0.13.4`, `gtk4 0.11.5` (GTK 4.10 floor). **Correction:** `ENABLE_GFM` in pulldown-cmark 0.13 covers alerts only — tables/strikethrough/task lists are separate flags (set explicitly in `doc::options`).
 - [x] Confirm Mint-Y GTK4 CSS has expected named colors: `@theme_fg_color`, `@theme_selected_bg_color`, `@success_color`, `@warning_color`, `@error_color`, `@borders` all resolve (verified live under Xvfb+metacity).
 - [x] Flatpak runtime pinned to `org.gnome.Platform 48` in the manifest; re-check at submission.
@@ -169,4 +171,4 @@ Dependencies: `gtk4`, `pulldown-cmark`, `notify`, `glib` (transitively required)
 | Inline code / link styling fidelity across themes | Style via CSS classes + theme named colors only; accept graceful degradation on exotic themes. |
 | CLI-passed file paths inside flatpak sandbox | Document `flatpak run ... --file=…` portal flow; primary UX is file dialog + file-manager activation, both portal-clean. |
 | Debian inclusion timeline (sponsor-driven, months) | Treat as post-1.0; Flathub/AUR/PPA give full coverage meanwhile. |
-| `markview` name collision at publication time | Decide name + domain in M0, before any submission. |
+| ~~`markview` name collision at publication time~~ | Resolved: renamed to `marksight` before any submission. |

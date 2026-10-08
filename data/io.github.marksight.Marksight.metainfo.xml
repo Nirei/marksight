@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>io.github.markview.Markview</id>
+  <id>io.github.marksight.Marksight</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>MIT OR Apache-2.0</project_license>
-  <name>markview</name>
+  <name>marksight</name>
   <summary>Minimal, theme-native markdown viewer</summary>
   <description>
     <p>
-      markview renders Markdown documents using native GTK widgets, so it
+      marksight renders Markdown documents using native GTK widgets, so it
       follows your desktop theme automatically — light or dark, Mint-Y or
       Adwaita — with no configuration. It supports the full CommonMark
       specification plus GitHub-flavored tables, task lists, footnotes,
@@ -20,12 +20,12 @@
       network access — untrusted files never reach an interpreter.
     </p>
   </description>
-  <launchable type="desktop-id">io.github.markview.Markview.desktop</launchable>
+  <launchable type="desktop-id">io.github.marksight.Marksight.desktop</launchable>
   <provides>
-    <binary>markview</binary>
+    <binary>marksight</binary>
   </provides>
-  <url type="homepage">https://github.com/markview/markview</url>
-  <url type="bugtracker">https://github.com/markview/markview/issues</url>
+  <url type="homepage">https://github.com/marksight/marksight</url>
+  <url type="bugtracker">https://github.com/marksight/marksight/issues</url>
   <content_rating type="oars-1.1" />
   <requires>
     <display_length compare="ge">360</display_length>

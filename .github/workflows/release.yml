@@ -31,10 +31,10 @@ jobs:
       - name: Package
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
-          NAME="markview-$VERSION-${{ matrix.target }}"
+          NAME="marksight-$VERSION-${{ matrix.target }}"
           STAGE="target/$NAME"
           mkdir -p "$STAGE"
-          cp target/${{ matrix.target }}/release/markview "$STAGE/"
+          cp target/${{ matrix.target }}/release/marksight "$STAGE/"
           cp README.md "$STAGE/"
           cp LICENSE-MIT LICENSE-APACHE "$STAGE/"
           tar -czf "target/$NAME.tar.gz" -C target "$NAME"
@@ -42,7 +42,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target }}
-          path: target/markview-*.tar.gz
+          path: target/marksight-*.tar.gz
 
   publish:
     name: Create GitHub release

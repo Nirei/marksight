@@ -1,4 +1,4 @@
-# markview
+# marksight
 
 A theme-native markdown viewer.
 

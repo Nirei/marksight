@@ -1,12 +1,12 @@
 [package]
-name = "markview"
+name = "marksight"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.85"
 description = "A minimal, theme-native markdown viewer"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/markview/markview"
-homepage = "https://github.com/markview/markview"
+repository = "https://github.com/marksight/marksight"
+homepage = "https://github.com/marksight/marksight"
 keywords = ["markdown", "viewer", "gtk", "commonmark", "gfm"]
 categories = ["gui", "text-processing"]
 readme = "README.md"
@@ -25,7 +25,7 @@ ui = ["dep:gtk"]
 proptest = "1.11"
 
 [[bin]]
-name = "markview"
+name = "marksight"
 required-features = ["ui"]
 
 [lints.rust]

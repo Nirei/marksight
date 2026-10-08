@@ -1,7 +1,7 @@
-Source: markview
+Source: marksight
 Section: utils
 Priority: optional
-Maintainer: The markview contributors <markview@example.org>
+Maintainer: The marksight contributors <marksight@example.org>
 Rules-Requires-Root: no
 Build-Depends:
  debhelper-compat (= 13),
@@ -9,18 +9,18 @@ Build-Depends:
  rustc:native,
  libgtk-4-dev (>= 4.10),
 Standards-Version: 4.7.0
-Vcs-Git: https://github.com/markview/markview.git
-Vcs-Browser: https://github.com/markview/markview
-Homepage: https://github.com/markview/markview
+Vcs-Git: https://github.com/marksight/marksight.git
+Vcs-Browser: https://github.com/marksight/marksight
+Homepage: https://github.com/marksight/marksight
 
-Package: markview
+Package: marksight
 Architecture: any
 Depends:
  ${misc:Depends},
  ${shlibs:Depends},
 Built-Using: ${cargo:Built-Using}
 Description: minimal, theme-native markdown viewer
- markview renders Markdown documents with native GTK 4 widgets, following
+ marksight renders Markdown documents with native GTK 4 widgets, following
  the desktop theme automatically — light or dark, Mint-Y or Adwaita — with
  no configuration. It supports CommonMark plus GitHub-flavored tables, task
  lists, footnotes, strikethrough and alerts, watches files for live reload,

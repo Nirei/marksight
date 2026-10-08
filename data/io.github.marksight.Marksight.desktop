@@ -1,14 +1,14 @@
 [Desktop Entry]
 Type=Application
-Name=markview
+Name=marksight
 GenericName=Markdown Viewer
 Comment=View Markdown files with your system theme
 Comment[es]=Ver archivos Markdown con el tema del sistema
-Exec=markview %f
-Icon=io.github.markview.Markview
+Exec=marksight %f
+Icon=io.github.marksight.Marksight
 Terminal=false
 Categories=Office;Viewer;
 MimeType=text/markdown;text/x-markdown;
 StartupNotify=true
-StartupWMClass=io.github.markview.Markview
+StartupWMClass=io.github.marksight.Marksight
 SingleMainWindow=true

@@ -3,12 +3,12 @@
 mod common;
 
 use libfuzzer_sys::fuzz_target;
-use markview::find;
-use markview::markup;
+use marksight::find;
+use marksight::markup;
 
 fuzz_target!(|data: &[u8]| {
     let text = String::from_utf8_lossy(data);
-    let parsed = markview::doc::parse(&text);
+    let parsed = marksight::doc::parse(&text);
     let index = find::TextIndex::build(&parsed);
 
     let needle_len = data.len() % 16;
@@ -51,10 +51,10 @@ fuzz_target!(|data: &[u8]| {
     }
 });
 
-fn inline_content(block: &markview::doc::Block) -> Option<&Vec<markview::doc::Inline>> {
+fn inline_content(block: &marksight::doc::Block) -> Option<&Vec<marksight::doc::Inline>> {
     match block {
-        markview::doc::Block::Heading { inlines, .. }
-        | markview::doc::Block::Paragraph(inlines) => Some(inlines),
+        marksight::doc::Block::Heading { inlines, .. }
+        | marksight::doc::Block::Paragraph(inlines) => Some(inlines),
         _ => None,
     }
 }

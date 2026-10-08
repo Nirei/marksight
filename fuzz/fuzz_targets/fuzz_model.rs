@@ -3,7 +3,7 @@
 mod common;
 
 use libfuzzer_sys::fuzz_target;
-use markview::doc::{self, Block};
+use marksight::doc::{self, Block};
 
 fuzz_target!(|data: &[u8]| {
     let text = String::from_utf8_lossy(data);
@@ -17,6 +17,6 @@ fuzz_target!(|data: &[u8]| {
         );
     }
 
-    let _ = markview::markup::document_text(&parsed);
-    let _ = markview::find::TextIndex::build(&parsed);
+    let _ = marksight::markup::document_text(&parsed);
+    let _ = marksight::find::TextIndex::build(&parsed);
 });

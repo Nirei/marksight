@@ -1,4 +1,4 @@
-//! markview — a minimal, theme-native markdown viewer.
+//! marksight — a minimal, theme-native markdown viewer.
 //!
 //! The crate is split into a GTK-free core ([`doc`], [`markup`], [`find`]) and
 //! a UI layer (`render`, `watch`, `app`) that is only compiled with the default

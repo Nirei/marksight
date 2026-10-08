@@ -12,7 +12,7 @@ use std::time::{Duration, Instant};
 use gtk::glib;
 use gtk::prelude::*;
 
-use markview::app;
+use marksight::app;
 
 static SKIP: AtomicBool = AtomicBool::new(false);
 
@@ -85,7 +85,7 @@ fn open_document(mv: &std::rc::Rc<app::App>) {
 }
 
 fn toc_matches_headings(mv: &std::rc::Rc<app::App>) {
-    let doc = markview::doc::parse(&std::fs::read_to_string(fixture("kitchen-sink.md")).unwrap());
+    let doc = marksight::doc::parse(&std::fs::read_to_string(fixture("kitchen-sink.md")).unwrap());
     assert_eq!(mv.toc_row_count() as usize, doc.headings.len());
 }
 
@@ -103,7 +103,7 @@ fn toc_sidebar_fills_pane(mv: &std::rc::Rc<app::App>) {
 }
 
 fn search_finds_and_cycles(mv: &std::rc::Rc<app::App>) {
-    mv.search_set("markview");
+    mv.search_set("marksight");
     assert!(
         pump_until(Duration::from_secs(2), || !mv.search_counter().is_empty()),
         "search counter never populated"
@@ -171,7 +171,7 @@ fn scroll_targets_move_viewport(mv: &std::rc::Rc<app::App>) {
     let doc_text = (1..=400)
         .map(|i| format!("## heading {i}\n\ndocument body {i}\n"))
         .collect::<String>();
-    let path = std::env::temp_dir().join("markview-smoke-tall.md");
+    let path = std::env::temp_dir().join("marksight-smoke-tall.md");
     std::fs::write(&path, &doc_text).unwrap();
     mv.open_path(&path);
     assert!(
@@ -280,7 +280,7 @@ fn pathological_documents_do_not_crash(mv: &std::rc::Rc<app::App>) {
     let deep = "> ".repeat(120) + "bottom";
     let unclosed = "`".repeat(50);
     let pathological = format!("{huge_table}\n\n{deep}\n\n{unclosed}\n\n| broken | table\n|:-|\n");
-    let path = std::env::temp_dir().join("markview-smoke-pathological.md");
+    let path = std::env::temp_dir().join("marksight-smoke-pathological.md");
     std::fs::write(&path, &pathological).unwrap();
     mv.open_path(&path);
     assert!(
@@ -292,7 +292,7 @@ fn pathological_documents_do_not_crash(mv: &std::rc::Rc<app::App>) {
 }
 
 fn live_reload_replaces_content(mv: &std::rc::Rc<app::App>) {
-    let path = std::env::temp_dir().join("markview-smoke-reload.md");
+    let path = std::env::temp_dir().join("marksight-smoke-reload.md");
     std::fs::write(&path, "# first\n\none paragraph\n").unwrap();
     mv.open_path(&path);
     assert!(
@@ -315,14 +315,14 @@ fn huge_document_within_budget(mv: &std::rc::Rc<app::App>) {
     for i in 0..1100 {
         text.push_str(&format!("## section {i}\nsome *emphasis* and `code` and [link](https://example.com/{i}) text\n\n- item one\n- item two with **bold**\n\n> a quote line\n\n```rust\nfn f{i}() -> u32 {{ {i} }}\n```\n\n"));
     }
-    let path = std::env::temp_dir().join("markview-smoke-huge.md");
+    let path = std::env::temp_dir().join("marksight-smoke-huge.md");
     std::fs::write(&path, &text).unwrap();
 
     let parsed = std::time::Instant::now();
-    let doc = markview::doc::parse(&text);
+    let doc = marksight::doc::parse(&text);
     let parse_ms = parsed.elapsed().as_millis();
     let indexed = std::time::Instant::now();
-    let index = markview::find::TextIndex::build(&doc);
+    let index = marksight::find::TextIndex::build(&doc);
     let index_ms = indexed.elapsed().as_millis();
     assert!(!index.is_empty());
 
@@ -336,7 +336,7 @@ fn huge_document_within_budget(mv: &std::rc::Rc<app::App>) {
 }
 
 fn error_state_on_missing_file(mv: &std::rc::Rc<app::App>) {
-    mv.open_path(PathBuf::from("/nonexistent/markview/does-not-exist.md").as_path());
+    mv.open_path(PathBuf::from("/nonexistent/marksight/does-not-exist.md").as_path());
     assert!(
         pump_until(Duration::from_secs(5), || mv.visible_page() == "error"),
         "missing file should land on the error page, got {:?}",

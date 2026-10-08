@@ -94,10 +94,10 @@ jobs:
       - run: cargo build --release
       - name: Stripped binary must stay under 15 MB
         run: |
-          STRIPPED=$(stat -c%s target/release/markview)
-          cp target/release/markview /tmp/markview.stripped
-          strip /tmp/markview.stripped
-          BYTES=$(stat -c%s /tmp/markview.stripped)
+          STRIPPED=$(stat -c%s target/release/marksight)
+          cp target/release/marksight /tmp/marksight.stripped
+          strip /tmp/marksight.stripped
+          BYTES=$(stat -c%s /tmp/marksight.stripped)
           echo "stripped size: $BYTES bytes"
           LIMIT=$((15 * 1024 * 1024))
           test "$BYTES" -le "$LIMIT"

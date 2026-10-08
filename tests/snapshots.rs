@@ -1,7 +1,7 @@
 //! Golden-file snapshot tests for the pure markup layer.
 //!
 //! Each `tests/fixtures/*.md` is parsed and dumped via
-//! [`markview::markup::debug_dump`]; the dump must match
+//! [`marksight::markup::debug_dump`]; the dump must match
 //! `tests/snapshots/<name>.snap`. Regenerate with
 //! `UPDATE_SNAPSHOTS=1 cargo test`.
 
@@ -28,7 +28,7 @@ fn run() {
     for fixture in entries {
         let name = fixture.file_stem().unwrap().to_string_lossy().into_owned();
         let source = fs::read_to_string(&fixture).unwrap();
-        let dump = markview::markup::debug_dump(&markview::doc::parse(&source));
+        let dump = marksight::markup::debug_dump(&marksight::doc::parse(&source));
         let snap = snapshots.join(format!("{name}.snap"));
         if update || !snap.exists() {
             fs::create_dir_all(&snapshots).unwrap();

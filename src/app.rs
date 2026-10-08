@@ -2,7 +2,7 @@
 //!
 //! Owns the [`Document`] and the [`RenderedDoc`]; parsing happens on a worker
 //! thread and lands here through a main-loop poller, keeping the UI thread
-//! responsive for rebuilds of arbitrarily large files. markview is a
+//! responsive for rebuilds of arbitrarily large files. marksight is a
 //! single-window application, so the [`App`] handle is kept in a thread-local
 //! registry shared by the activate and open signals.
 
@@ -24,9 +24,9 @@ use crate::markup;
 use crate::render::{self, RenderCtx, RenderedDoc};
 use crate::watch::FileWatcher;
 
-pub const APP_ID: &str = "io.github.markview.Markview";
+pub const APP_ID: &str = "io.github.marksight.Marksight";
 
-const CSS: &str = include_str!("../resources/markview.css");
+const CSS: &str = include_str!("../resources/marksight.css");
 const FIND_DEBOUNCE: Duration = Duration::from_millis(120);
 const FIND_POLL: Duration = Duration::from_millis(40);
 const LOAD_POLL: Duration = Duration::from_millis(40);
@@ -158,7 +158,7 @@ fn build(app: &gtk::Application, loader: mpsc::Sender<LoadMsg>) -> Rc<App> {
         .application(app)
         .default_width(920)
         .default_height(700)
-        .title("markview")
+        .title("marksight")
         .icon_name(APP_ID)
         .build();
 
@@ -171,7 +171,7 @@ fn build(app: &gtk::Application, loader: mpsc::Sender<LoadMsg>) -> Rc<App> {
 
     let menu = gtk::gio::Menu::new();
     let section = gtk::gio::Menu::new();
-    section.append(Some("About markview"), Some("app.about"));
+    section.append(Some("About marksight"), Some("app.about"));
     section.append(Some("Quit"), Some("app.quit"));
     menu.append_section(None, &section);
     let menu_button = gtk::MenuButton::builder()
@@ -179,7 +179,7 @@ fn build(app: &gtk::Application, loader: mpsc::Sender<LoadMsg>) -> Rc<App> {
         .menu_model(&menu)
         .build();
 
-    let title_label = gtk::Label::new(Some("markview"));
+    let title_label = gtk::Label::new(Some("marksight"));
     title_label.set_css_classes(&["mv-title"]);
     title_label.set_ellipsize(gtk::pango::EllipsizeMode::End);
     let path_label = gtk::Label::new(None);
@@ -440,14 +440,14 @@ fn show_about(window: &gtk::ApplicationWindow) {
     let about = gtk::AboutDialog::new();
     about.set_transient_for(Some(window));
     about.set_modal(true);
-    about.set_program_name(Some("markview"));
+    about.set_program_name(Some("marksight"));
     about.set_version(Some(env!("CARGO_PKG_VERSION")));
     about.set_comments(Some("A minimal, theme-native markdown viewer"));
     about.set_license(Some(
         "Licensed under either of MIT or Apache-2.0, at your option.",
     ));
     about.set_logo_icon_name(Some(APP_ID));
-    about.set_website(Some("https://github.com/markview/markview"));
+    about.set_website(Some("https://github.com/marksight/marksight"));
     about.present();
 }
 
@@ -455,7 +455,7 @@ fn welcome_page() -> gtk::Widget {
     let column = gtk::Box::new(gtk::Orientation::Vertical, 12);
     column.set_valign(gtk::Align::Center);
     column.set_halign(gtk::Align::Center);
-    let title = gtk::Label::new(Some("markview"));
+    let title = gtk::Label::new(Some("marksight"));
     title.set_css_classes(&["mv-welcome-title"]);
     let subtitle = gtk::Label::new(Some("Open a Markdown file to view it here"));
     subtitle.set_css_classes(&["mv-welcome-subtitle"]);
@@ -610,8 +610,8 @@ fn show_error(app: &Rc<App>, path: &Path, message: &str) {
         .error_label
         .set_text(&format!("{}\n\n{}", path.display(), message));
     app.ui.stack.set_visible_child_name("error");
-    app.ui.window.set_title(Some("markview"));
-    app.ui.title_label.set_text("markview");
+    app.ui.window.set_title(Some("marksight"));
+    app.ui.title_label.set_text("marksight");
     app.ui.path_label.set_text("");
     let mut state = app.state.borrow_mut();
     state.path = None;
@@ -666,7 +666,7 @@ fn apply_doc(app: &Rc<App>, path: &Path, parsed: Document) {
     let file_name = path
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
-        .unwrap_or_else(|| "markview".to_owned());
+        .unwrap_or_else(|| "marksight".to_owned());
 
     {
         let mut state = app.state.borrow_mut();
@@ -705,7 +705,7 @@ impl App {
         });
         match watcher {
             Ok(watcher) => self.state.borrow_mut().watcher = Some(watcher),
-            Err(err) => eprintln!("markview: live reload unavailable: {err}"),
+            Err(err) => eprintln!("marksight: live reload unavailable: {err}"),
         }
     }
 }

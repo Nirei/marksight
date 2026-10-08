@@ -1,9 +1,9 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: markview
-Source: https://github.com/markview/markview
+Upstream-Name: marksight
+Source: https://github.com/marksight/marksight
 
 Files: *
-Copyright: 2026 The markview contributors
+Copyright: 2026 The marksight contributors
 License: MIT OR Apache-2.0
 
 License: MIT

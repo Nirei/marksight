@@ -1,9 +1,9 @@
-# markview
+# marksight
 
 A minimal, theme-native markdown viewer.
 
 Renders Markdown with **native GTK 4 widgets** — no browser engine, no
-JavaScript, no HTML. Because rendering is plain widgets, markview follows your
+JavaScript, no HTML. Because rendering is plain widgets, marksight follows your
 desktop theme automatically: light or dark, Mint-Y or Adwaita, with zero
 configuration.
 
@@ -55,7 +55,7 @@ sudo make install
 | Arch (AUR) | `packaging/aur/PKGBUILD`, ready at first tagged release |
 | Debian/Ubuntu PPA | `packaging/deb/`, launchpad upload at release time |
 | Flathub | `packaging/flathub/`, submission checklist in the manifest |
-| crates.io | `cargo install markview` once published |
+| crates.io | `cargo install marksight` once published |
 
 Releases attach stripped `x86_64-unknown-linux-gnu` tarballs built by CI.
 
@@ -134,7 +134,7 @@ fuzz targets link against.
 
 - No network, no JavaScript engine, no HTML rendering, no `unsafe`
 - All document text is escaped by our markup builder; the only tags handed to
-  Pango are the ones markview itself emits
+  Pango are the ones marksight itself emits
 - Raw HTML events from the parser are dropped at the model boundary
 - Links open through `GtkUriLauncher` (portal-aware); `#fn-N` anchors scroll
   internally and never launch anything

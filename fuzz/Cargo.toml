@@ -1,5 +1,5 @@
 [package]
-name = "markview-fuzz"
+name = "marksight-fuzz"
 version = "0.0.0"
 publish = false
 edition = "2024"
@@ -10,7 +10,7 @@ cargo-fuzz = true
 [dependencies]
 libfuzzer-sys = "0.4"
 
-[dependencies.markview]
+[dependencies.marksight]
 path = ".."
 default-features = false
 

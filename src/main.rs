@@ -13,25 +13,25 @@ fn main() -> ExitCode {
                 return ExitCode::SUCCESS;
             }
             "-V" | "--version" => {
-                println!("markview {}", env!("CARGO_PKG_VERSION"));
+                println!("marksight {}", env!("CARGO_PKG_VERSION"));
                 return ExitCode::SUCCESS;
             }
             _ if flag.starts_with('-') => {
-                eprintln!("markview: unknown option {flag}");
+                eprintln!("marksight: unknown option {flag}");
                 print_help();
                 return ExitCode::FAILURE;
             }
             _ => {}
         }
     }
-    markview::app::run().into()
+    marksight::app::run().into()
 }
 
 fn print_help() {
     println!(
-        "markview {} — a minimal, theme-native markdown viewer
+        "marksight {} — a minimal, theme-native markdown viewer
 
-Usage: markview [FILE]
+Usage: marksight [FILE]
 
 Options:
   -h, --help     Print this help

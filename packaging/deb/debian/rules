@@ -5,11 +5,11 @@
 
 override_dh_auto_install:
 	dh_auto_install
-	install -Dm644 data/io.github.markview.Markview.desktop \
-		debian/markview/usr/share/applications/io.github.markview.Markview.desktop
-	install -Dm644 data/io.github.markview.Markview.metainfo.xml \
-		debian/markview/usr/share/metainfo/io.github.markview.Markview.metainfo.xml
-	install -Dm644 data/icons/hicolor/scalable/apps/io.github.markview.Markview.svg \
-		debian/markview/usr/share/icons/hicolor/scalable/apps/io.github.markview.Markview.svg
-	install -Dm644 data/markview.1 \
-		debian/markview/usr/share/man/man1/markview.1
+	install -Dm644 data/io.github.marksight.Marksight.desktop \
+		debian/marksight/usr/share/applications/io.github.marksight.Marksight.desktop
+	install -Dm644 data/io.github.marksight.Marksight.metainfo.xml \
+		debian/marksight/usr/share/metainfo/io.github.marksight.Marksight.metainfo.xml
+	install -Dm644 data/icons/hicolor/scalable/apps/io.github.marksight.Marksight.svg \
+		debian/marksight/usr/share/icons/hicolor/scalable/apps/io.github.marksight.Marksight.svg
+	install -Dm644 data/marksight.1 \
+		debian/marksight/usr/share/man/man1/marksight.1

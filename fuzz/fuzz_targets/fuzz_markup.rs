@@ -3,12 +3,12 @@
 mod common;
 
 use libfuzzer_sys::fuzz_target;
-use markview::doc::{Block, Inline};
-use markview::markup;
+use marksight::doc::{Block, Inline};
+use marksight::markup;
 
 fuzz_target!(|data: &[u8]| {
     let text = String::from_utf8_lossy(data);
-    let parsed = markview::doc::parse(&text);
+    let parsed = marksight::doc::parse(&text);
 
     for block in common::all_blocks(&parsed) {
         if let Some(inlines) = inline_content(block) {
