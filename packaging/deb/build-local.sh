@@ -10,6 +10,11 @@
 
 set -euo pipefail
 
+if [ "$(id -u)" -eq 0 ]; then
+  echo "run as your user — only 'apt install' needs sudo" >&2
+  exit 1
+fi
+
 root="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$root"
 
@@ -36,6 +41,13 @@ done
   exit 1
 }
 
+dest="packaging/deb/marksight_${version}_${arch}.deb"
+if [ -e "$dest" ] && [ ! -w "$dest" ]; then
+  echo "cannot overwrite $dest — owned by another user (earlier sudo run?)" >&2
+  echo "fix with: sudo rm -f $dest" >&2
+  exit 1
+fi
+
 base="$(mktemp -d)"
 work="$base/src"
 mkdir "$work"
@@ -55,6 +67,6 @@ printf '%s\n' "$(cd "$(dirname "$cargo_bin")" && pwd)/$(basename "$cargo_bin")" 
 echo "building marksight_${version}_${arch}.deb in $work"
 (cd "$work" && dpkg-buildpackage -us -uc -b)
 
-cp "$base/marksight_${version}_${arch}.deb" packaging/deb/
+cp "$base/marksight_${version}_${arch}.deb" "$dest"
 echo "wrote packaging/deb/marksight_${version}_${arch}.deb"
 echo "install with: sudo apt install ./packaging/deb/marksight_${version}_${arch}.deb"

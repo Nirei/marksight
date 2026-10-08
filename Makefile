@@ -29,7 +29,11 @@ uninstall:
 	rm -f $(DESTDIR)$(DATADIR)/man/man1/marksight.1
 
 deb:
-	packaging/deb/build-local.sh
+	@if command -v cargo-deb >/dev/null 2>&1; then \
+		cargo deb && cp target/debian/marksight_*.deb packaging/deb/; \
+	else \
+		packaging/deb/build-local.sh; \
+	fi
 
 clean:
 	cargo clean

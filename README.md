@@ -50,12 +50,16 @@ make
 sudo make install
 ```
 
-Or build a proper package (needs `devscripts debhelper dh-cargo`):
+Or build a package (the easy way needs `cargo install cargo-deb`, one time):
 
 ```sh
 make deb                                   # -> packaging/deb/marksight_*.deb
 sudo apt install ./packaging/deb/marksight_*.deb
 ```
+
+`make deb` uses cargo-deb when installed and falls back to the
+dpkg-buildpackage flow in `packaging/deb/` (kept for the distro
+packaging path — see `packaging/deb/build-local.sh`).
 
 ### Distro packages
 

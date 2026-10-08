@@ -31,6 +31,21 @@ required-features = ["ui"]
 [lints.rust]
 unsafe_code = "forbid"
 
+[package.metadata.deb]
+maintainer = "The marksight contributors"
+copyright = "2026, The marksight contributors"
+license-file = ["LICENSE-MIT"]
+extended-description = "marksight renders Markdown documents with native GTK 4 widgets, following the desktop theme automatically. Raw HTML in documents is dropped rather than rendered, and the program has no JavaScript engine, no network access and no unsafe code."
+depends = "libgtk-4-1 (>= 4.10)"
+section = "utils"
+assets = [
+  ["target/release/marksight", "usr/bin/", "755"],
+  ["data/io.github.marksight.Marksight.desktop", "usr/share/applications/", "644"],
+  ["data/io.github.marksight.Marksight.metainfo.xml", "usr/share/metainfo/", "644"],
+  ["data/icons/hicolor/scalable/apps/io.github.marksight.Marksight.svg", "usr/share/icons/hicolor/scalable/apps/", "644"],
+  ["data/marksight.1", "usr/share/man/man1/", "644"],
+]
+
 [lints.clippy]
 all = { level = "warn", priority = -1 }
 
