@@ -16,6 +16,7 @@ exclude = ["/packaging", "/.github", "/fuzz"]
 gtk = { package = "gtk4", version = "0.11", features = ["v4_10"], optional = true }
 pulldown-cmark = { version = "0.13", default-features = false, features = ["simd"] }
 notify = "8"
+async-channel = "2"
 
 [features]
 default = ["ui"]

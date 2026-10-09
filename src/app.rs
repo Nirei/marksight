@@ -1,10 +1,10 @@
 //! Application shell: window, header bar, TOC sidebar, search bar, states.
 //!
 //! Owns the [`Document`] and the [`RenderedDoc`]; parsing happens on a worker
-//! thread and lands here through a main-loop poller, keeping the UI thread
-//! responsive for rebuilds of arbitrarily large files. marksight is a
-//! single-window application, so the [`App`] handle is kept in a thread-local
-//! registry shared by the activate and open signals.
+//! thread and is delivered back through the main context the moment it is
+//! ready, keeping the UI thread responsive for rebuilds of arbitrarily large
+//! files. marksight is a single-window application, so the [`App`] handle is
+//! kept in a thread-local registry shared by the activate and open signals.
 //!
 //! The window stays hidden until its first page is ready: an `open` launch
 //! defers `present()` to the moment the document (or load error) is applied,
@@ -14,7 +14,6 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use std::sync::mpsc;
 use std::time::Duration;
 
 use gtk::gdk;
@@ -34,7 +33,6 @@ const CSS: &str = include_str!("../resources/marksight.css");
 const LOGO_SVG: &str = include_str!("../data/logo/marksight-logo.svg");
 const FIND_DEBOUNCE: Duration = Duration::from_millis(120);
 const FIND_POLL: Duration = Duration::from_millis(40);
-const LOAD_POLL: Duration = Duration::from_millis(40);
 
 enum LoadMsg {
     Loaded { path: PathBuf, doc: Document },
@@ -95,7 +93,6 @@ impl State {
 pub struct App {
     ui: Ui,
     state: RefCell<State>,
-    loader: mpsc::Sender<LoadMsg>,
 }
 
 thread_local! {
@@ -125,20 +122,8 @@ pub fn ensure_window(app: &gtk::Application) -> Rc<App> {
     if let Some(application) = existing {
         return application;
     }
-    let (sender, receiver) = mpsc::channel::<LoadMsg>();
-    let application = build(app, sender);
+    let application = build(app);
     INSTANCE.with(|cell| *cell.borrow_mut() = Some(application.clone()));
-
-    let poll_app = application.clone();
-    glib::timeout_add_local(LOAD_POLL, move || {
-        while let Ok(msg) = receiver.try_recv() {
-            match msg {
-                LoadMsg::Loaded { path, doc } => apply_doc(&poll_app, &path, doc),
-                LoadMsg::Failed { path, message } => show_error(&poll_app, &path, &message),
-            }
-        }
-        glib::ControlFlow::Continue
-    });
 
     let find_app = application.clone();
     glib::timeout_add_local(FIND_POLL, move || {
@@ -157,7 +142,7 @@ pub fn ensure_window(app: &gtk::Application) -> Rc<App> {
     application
 }
 
-fn build(app: &gtk::Application, loader: mpsc::Sender<LoadMsg>) -> Rc<App> {
+fn build(app: &gtk::Application) -> Rc<App> {
     load_css();
 
     let window = gtk::ApplicationWindow::builder()
@@ -287,7 +272,6 @@ fn build(app: &gtk::Application, loader: mpsc::Sender<LoadMsg>) -> Rc<App> {
     let application = App {
         ui,
         state: RefCell::new(State::new()),
-        loader,
     };
     let shared = Rc::new(application);
     wire(&shared, app, &open_button);
@@ -602,7 +586,6 @@ impl App {
         }
         self.start_watcher(path);
         let path = path.to_path_buf();
-        let sender = self.loader.clone();
         std::thread::spawn(move || {
             let msg = match std::fs::read(&path) {
                 Ok(bytes) => LoadMsg::Loaded {
@@ -614,7 +597,18 @@ impl App {
                     message: err.to_string(),
                 },
             };
-            let _ = sender.send(msg);
+            // Deliver straight onto the main context: the callback runs on
+            // the main loop's next pass, with no timer in between.
+            glib::MainContext::default().invoke(move || {
+                INSTANCE.with(|cell| {
+                    if let Some(app) = cell.borrow().clone() {
+                        match msg {
+                            LoadMsg::Loaded { path, doc } => apply_doc(&app, &path, doc),
+                            LoadMsg::Failed { path, message } => show_error(&app, &path, &message),
+                        }
+                    }
+                });
+            });
         });
     }
 }
