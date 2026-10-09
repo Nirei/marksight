@@ -82,6 +82,9 @@ fn open_document(mv: &std::rc::Rc<app::App>) {
         mv.label_group_count()
     );
     assert_eq!(mv.scroll_value(), 0.0);
+    // The window is first presented when the document lands; let it map and
+    // allocate before layout-dependent assertions read pane sizes.
+    pump(Duration::from_millis(200));
 }
 
 fn toc_matches_headings(mv: &std::rc::Rc<app::App>) {

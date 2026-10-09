@@ -5,6 +5,10 @@
 //! responsive for rebuilds of arbitrarily large files. marksight is a
 //! single-window application, so the [`App`] handle is kept in a thread-local
 //! registry shared by the activate and open signals.
+//!
+//! The window stays hidden until its first page is ready: an `open` launch
+//! defers `present()` to the moment the document (or load error) is applied,
+//! so startup never paints an empty frame.
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -104,12 +108,13 @@ pub fn run() -> glib::ExitCode {
         .flags(gtk::gio::ApplicationFlags::HANDLES_OPEN)
         .build();
     app.connect_activate(|app| {
-        ensure_window(app);
+        ensure_window(app).present_if_hidden();
     });
     app.connect_open(|app, files, _| {
         let application = ensure_window(app);
-        if let Some(path) = files.first().and_then(|f| f.path()) {
-            application.open_path(&path);
+        match files.first().and_then(|f| f.path()) {
+            Some(path) => application.open_path(&path),
+            None => application.present_if_hidden(),
         }
     });
     app.run()
@@ -413,7 +418,6 @@ fn wire(app: &Rc<App>, gtk_app: &gtk::Application, open_button: &gtk::Button) {
         }
     });
 
-    window.present();
 }
 
 fn key_pressed(app: &Rc<App>, accel: &str) {
@@ -573,6 +577,15 @@ impl App {
         self.state.borrow().doc.blocks.len()
     }
 
+    /// Present the window on first content so its first paint already shows
+    /// a page instead of an empty shell. No-op afterwards: later opens never
+    /// raise or focus an already-visible window.
+    fn present_if_hidden(&self) {
+        if !self.ui.window.is_visible() {
+            self.ui.window.present();
+        }
+    }
+
     pub fn reload_path(self: &Rc<Self>, path: &Path) {
         if self.state.borrow().path.as_deref() == Some(path) {
             self.open_path(path);
@@ -621,6 +634,7 @@ fn show_error(app: &Rc<App>, path: &Path, message: &str) {
     state.path = None;
     state.watcher = None;
     state.rendered = None;
+    app.present_if_hidden();
 }
 
 fn apply_doc(app: &Rc<App>, path: &Path, parsed: Document) {
@@ -698,6 +712,7 @@ fn apply_doc(app: &Rc<App>, path: &Path, parsed: Document) {
     if app.ui.search_bar.is_search_mode() && !needle.trim().is_empty() {
         run_find(app, &needle);
     }
+    app.present_if_hidden();
 }
 
 impl App {
