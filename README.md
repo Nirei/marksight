@@ -9,7 +9,7 @@ JavaScript, no HTML. Because rendering is plain widgets, marksight follows your
 desktop theme automatically: light or dark, Mint-Y or Adwaita, with zero
 configuration.
 
-[<img alt="A screenshot showing the program in execution" src="docs/screenshot.png">](docs/screenshot.png)
+![A screenshot showing the program in execution](docs/screenshot.png)
 
 ## Features
 
