@@ -38,7 +38,11 @@ fn main() {
         }
         std::thread::sleep(Duration::from_millis(1));
     }
-    println!("[bench] doc-visible:         +{:7.2} ms (page={})", ms(t), mv.visible_page());
+    println!(
+        "[bench] doc-visible:         +{:7.2} ms (page={})",
+        ms(t),
+        mv.visible_page()
+    );
 }
 
 fn ms(t: Instant) -> f64 {

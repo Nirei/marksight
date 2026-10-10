@@ -419,7 +419,6 @@ fn wire(app: &Rc<App>, gtk_app: &gtk::Application, open_button: &gtk::Button) {
             clear_find(&app);
         }
     });
-
 }
 
 fn key_pressed(app: &Rc<App>, accel: &str) {

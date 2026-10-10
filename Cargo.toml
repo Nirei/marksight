@@ -29,6 +29,10 @@ proptest = "1.11"
 name = "marksight"
 required-features = ["ui"]
 
+[[example]]
+name = "startup_bench"
+required-features = ["ui"]
+
 [lints.rust]
 unsafe_code = "forbid"
 

@@ -1,3 +1,6 @@
+// Gated to nothing without the ui feature: the whole file needs GTK.
+#![cfg(feature = "ui")]
+
 //! GUI smoke tests: boot the real GTK application against a virtual display.
 //!
 //! The whole suite is one test function so all GTK interaction happens on a
@@ -73,10 +76,8 @@ fn welcome_page_visible(mv: &std::rc::Rc<app::App>) {
 fn open_document(mv: &std::rc::Rc<app::App>) {
     mv.open_path(&fixture("kitchen-sink.md"));
     assert!(
-        pump_until(
-            Duration::from_secs(5),
-            || mv.visible_page() == "doc" && mv.rendering_complete()
-        ),
+        pump_until(Duration::from_secs(5), || mv.visible_page() == "doc"
+            && mv.rendering_complete()),
         "document page never appeared or never finished streaming"
     );
     assert!(

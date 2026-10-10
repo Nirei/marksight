@@ -112,7 +112,7 @@ jobs:
       - name: Install packaging dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y devscripts debhelper libgtk-4-dev pkg-config
+          sudo apt-get install -y devscripts debhelper build-essential libgtk-4-dev pkg-config
       - name: Build package
         run: packaging/deb/build-local.sh
       - name: Upload package

@@ -6,8 +6,8 @@
 //! variable unset (the shipped default), [`mark`] is a single atomic load
 //! and no clock is ever read, so release builds carry the markers for free.
 
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::OnceLock;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Instant;
 
 static ENABLED: AtomicBool = AtomicBool::new(false);
