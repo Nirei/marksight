@@ -25,6 +25,7 @@ use crate::doc::{self, Document, TocEntry};
 use crate::find::{self, Match, TextIndex};
 use crate::markup;
 use crate::render::{self, RenderCtx, RenderedDoc};
+use crate::timing;
 use crate::watch::FileWatcher;
 
 pub const APP_ID: &str = "io.github.marksight.Marksight";
@@ -104,16 +105,19 @@ pub fn run() -> glib::ExitCode {
         .application_id(APP_ID)
         .flags(gtk::gio::ApplicationFlags::HANDLES_OPEN)
         .build();
+    timing::mark("app-object-built");
     app.connect_activate(|app| {
         ensure_window(app).present_if_hidden();
     });
     app.connect_open(|app, files, _| {
+        timing::mark("open-signal");
         let application = ensure_window(app);
         match files.first().and_then(|f| f.path()) {
             Some(path) => application.open_path(&path),
             None => application.present_if_hidden(),
         }
     });
+    app.connect_startup(|_| timing::mark("startup-signal"));
     app.run()
 }
 
@@ -124,6 +128,7 @@ pub fn ensure_window(app: &gtk::Application) -> Rc<App> {
     }
     let application = build(app);
     INSTANCE.with(|cell| *cell.borrow_mut() = Some(application.clone()));
+    timing::mark("window-built");
 
     let find_app = application.clone();
     glib::timeout_add_local(FIND_POLL, move || {
@@ -152,6 +157,8 @@ fn build(app: &gtk::Application) -> Rc<App> {
         .title("marksight")
         .icon_name(APP_ID)
         .build();
+    window.connect_map(|_| timing::mark("window-mapped"));
+    window.connect_realize(|_| timing::mark("window-realized"));
 
     let open_button = gtk::Button::from_icon_name("document-open-symbolic");
     open_button.set_tooltip_text(Some("Open a markdown file (Ctrl+O)"));
@@ -577,6 +584,7 @@ impl App {
     }
 
     pub fn open_path(self: &Rc<Self>, path: &Path) {
+        timing::mark("open_path");
         {
             let mut state = self.state.borrow_mut();
             state.path = Some(path.to_path_buf());
@@ -588,10 +596,15 @@ impl App {
         let path = path.to_path_buf();
         std::thread::spawn(move || {
             let msg = match std::fs::read(&path) {
-                Ok(bytes) => LoadMsg::Loaded {
-                    path: path.clone(),
-                    doc: doc::parse(&String::from_utf8_lossy(&bytes)),
-                },
+                Ok(bytes) => {
+                    timing::mark("read-done");
+                    let doc = doc::parse(&String::from_utf8_lossy(&bytes));
+                    timing::mark("parse-done");
+                    LoadMsg::Loaded {
+                        path: path.clone(),
+                        doc,
+                    }
+                }
                 Err(err) => LoadMsg::Failed {
                     path: path.clone(),
                     message: err.to_string(),
@@ -632,6 +645,7 @@ fn show_error(app: &Rc<App>, path: &Path, message: &str) {
 }
 
 fn apply_doc(app: &Rc<App>, path: &Path, parsed: Document) {
+    timing::mark("apply_doc (doorbell)");
     if app.state.borrow().path.as_deref() != Some(path) {
         return;
     }
@@ -666,6 +680,7 @@ fn apply_doc(app: &Rc<App>, path: &Path, parsed: Document) {
         toc_targets: toc_targets.clone(),
     };
     let rendered = render::render(&ctx);
+    timing::mark("widgets-rendered");
     if let Some(viewport) = app.ui.scrolled.child().and_downcast::<gtk::Viewport>() {
         viewport.set_child(Some(&rendered.root));
     }
@@ -707,6 +722,7 @@ fn apply_doc(app: &Rc<App>, path: &Path, parsed: Document) {
         run_find(app, &needle);
     }
     app.present_if_hidden();
+    timing::mark("present-called");
 }
 
 impl App {

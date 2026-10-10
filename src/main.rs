@@ -3,6 +3,7 @@
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
+    marksight::timing::init();
     for arg in std::env::args_os().skip(1) {
         let Some(flag) = arg.to_str() else {
             continue;

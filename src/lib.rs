@@ -8,6 +8,7 @@
 pub mod doc;
 pub mod find;
 pub mod markup;
+pub mod timing;
 
 #[cfg(feature = "ui")]
 pub mod app;
