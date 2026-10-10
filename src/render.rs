@@ -733,8 +733,10 @@ fn picture_for(image: &markup::ImageInfo, ctx: &RenderCtx<'_>) -> gtk::Widget {
         if let Ok(texture) = gdk::Texture::from_filename(&path) {
             let picture = gtk::Picture::for_paintable(&texture);
             picture.set_css_classes(&["mv-image"]);
-            picture.set_content_fit(gtk::ContentFit::Contain);
-            picture.set_halign(gtk::Align::Start);
+            // Fill + ScaleDown: fill the column width so the allocated width
+            // is meaningful, scale down to fit, never upscale.
+            picture.set_content_fit(gtk::ContentFit::ScaleDown);
+            picture.set_halign(gtk::Align::Fill);
             picture.set_can_shrink(true);
             if !image.alt.is_empty() {
                 picture.set_tooltip_text(Some(&image.alt));

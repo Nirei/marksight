@@ -60,6 +60,7 @@ fn gui_smoke_suite() {
     search_clears_highlights(&mv);
     scroll_targets_move_viewport(&mv);
     pathological_documents_do_not_crash(&mv);
+    image_keeps_space_in_tall_document(&mv);
     live_reload_replaces_content(&mv);
     huge_document_within_budget(&mv);
     error_state_on_missing_file(&mv);
@@ -294,6 +295,43 @@ fn pathological_documents_do_not_crash(mv: &std::rc::Rc<app::App>) {
         pump_until(Duration::from_secs(5), || mv.label_group_count() > 100),
         "pathological document never applied (groups={})",
         mv.label_group_count()
+    );
+    let _ = std::fs::remove_file(&path);
+}
+
+fn image_keeps_space_in_tall_document(mv: &std::rc::Rc<app::App>) {
+    // Regression: in a document taller than the window, the scrolled window
+    // allocates the content its minimum height, and a shrinkable picture
+    // reports a zero minimum, so images used to collapse to nothing.
+    let dir = std::env::temp_dir().join("marksight-smoke-img");
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::copy(fixture("red-dot.png"), dir.join("red-dot.png")).unwrap();
+    let mut markdown = String::new();
+    for i in 0..60 {
+        markdown.push_str(&format!(
+            "## filler {i}\n\nparagraph of filler text to push the image far down {i}\n\n"
+        ));
+    }
+    markdown.push_str("![red dot](red-dot.png)\n");
+    let path = dir.join("doc.md");
+    std::fs::write(&path, markdown).unwrap();
+    mv.open_path(&path);
+    assert!(
+        pump_until(Duration::from_secs(5), || mv.visible_page() == "doc"
+            && mv.rendering_complete()),
+        "image document never finished rendering"
+    );
+    pump(Duration::from_millis(300));
+    let sizes = mv.picture_sizes();
+    assert_eq!(
+        sizes.len(),
+        1,
+        "expected exactly one picture, got {sizes:?}"
+    );
+    let (width, height) = sizes[0];
+    assert!(
+        width > 0 && height > 0,
+        "picture collapsed to {width}x{height} in a tall document"
     );
     let _ = std::fs::remove_file(&path);
 }

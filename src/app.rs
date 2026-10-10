@@ -216,6 +216,10 @@ fn build(app: &gtk::Application) -> Rc<App> {
     scrolled.set_hexpand(true);
     scrolled.set_vexpand(true);
     let viewport = gtk::Viewport::new(None::<&gtk::Adjustment>, None::<&gtk::Adjustment>);
+    // Size the content by its natural height: in documents taller than the
+    // window, the default MINIMUM policy collapses zero-minimum widgets
+    // (shrinkable pictures) to nothing.
+    viewport.set_vscroll_policy(gtk::ScrollablePolicy::Natural);
     viewport.set_child(Some(&gtk::Label::new(None)));
     scrolled.set_child(Some(&viewport));
     stack.add_named(&scrolled, Some("doc"));
@@ -421,6 +425,17 @@ fn wire(app: &Rc<App>, gtk_app: &gtk::Application, open_button: &gtk::Button) {
     });
 }
 
+fn collect_pictures(widget: &gtk::Widget, out: &mut Vec<(i32, i32)>) {
+    if let Some(picture) = widget.downcast_ref::<gtk::Picture>() {
+        out.push((picture.width(), picture.height()));
+    }
+    let mut child = widget.first_child();
+    while let Some(c) = child {
+        collect_pictures(&c, out);
+        child = c.next_sibling();
+    }
+}
+
 fn key_pressed(app: &Rc<App>, accel: &str) {
     match accel {
         "<control>o" => open_dialog(app),
@@ -578,6 +593,18 @@ impl App {
     /// find/TOC are available.
     pub fn rendering_complete(&self) -> bool {
         self.state.borrow().render_complete
+    }
+
+    /// Allocated (width, height) of every picture in the current document;
+    /// test hook for image-layout regressions.
+    pub fn picture_sizes(&self) -> Vec<(i32, i32)> {
+        let mut out = Vec::new();
+        if let Some(viewport) = self.ui.scrolled.child().and_downcast::<gtk::Viewport>() {
+            if let Some(content) = viewport.child() {
+                collect_pictures(&content, &mut out);
+            }
+        }
+        out
     }
 
     pub fn current_doc_len(&self) -> usize {
