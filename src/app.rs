@@ -693,12 +693,12 @@ fn apply_doc(app: &Rc<App>, path: &Path, parsed: Document) {
     };
 
     let base_dir = path.parent().map(Path::to_path_buf);
-    let headings = parsed.headings.clone();
     let file_name = path
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_else(|| "marksight".to_owned());
-    let has_toc = !headings.is_empty();
+    let toc_rows = toc_row_texts(&parsed, &parsed.headings);
+    let has_toc = !parsed.headings.is_empty();
 
     let mut renderer = render::ChunkedRenderer::new(
         parsed,
@@ -733,10 +733,13 @@ fn apply_doc(app: &Rc<App>, path: &Path, parsed: Document) {
     app.ui.window.set_title(Some(&file_name));
     app.ui.title_label.set_text(&file_name);
     app.ui.path_label.set_text(&path.display().to_string());
-    // The sidebar fills and appears when the stream completes; the button is
-    // already correct for this document.
-    app.ui.toc_column.set_visible(false);
-    app.ui.toc_button.set_active(false);
+    // The complete sidebar is built from the parsed headings before anything
+    // streams, so it is there in full from the first frame; only the scroll
+    // targets of not-yet-rendered headings are pending, and their rows simply
+    // do not scroll until the stream lands.
+    rebuild_toc(app, &toc_rows);
+    app.ui.toc_column.set_visible(has_toc);
+    app.ui.toc_button.set_active(has_toc);
     app.ui.toc_button.set_visible(has_toc);
     app.ui.match_counter.set_text("");
     app.present_if_hidden();
@@ -769,9 +772,8 @@ fn apply_doc(app: &Rc<App>, path: &Path, parsed: Document) {
             state.render_complete = true;
             state.toc_targets = toc_targets.borrow().clone();
         }
-        rebuild_toc(&stream_app, &headings);
-        stream_app.ui.toc_column.set_visible(has_toc);
-        stream_app.ui.toc_button.set_active(has_toc);
+        // TOC rows were built in full before the first slice; heading
+        // targets exist as the stream passes them.
         let needle = stream_app.ui.search_entry.text().to_string();
         if stream_app.ui.search_bar.is_search_mode() && !needle.trim().is_empty() {
             run_find(&stream_app, &needle);
@@ -794,25 +796,35 @@ impl App {
     }
 }
 
-fn rebuild_toc(app: &Rc<App>, headings: &[TocEntry]) {
+/// Heading levels and texts for the sidebar, resolved against the whole
+/// parsed document so the TOC can be complete before any content streams.
+fn toc_row_texts(doc: &Document, headings: &[TocEntry]) -> Vec<(u8, String)> {
+    headings
+        .iter()
+        .map(|entry| {
+            let text = doc
+                .resolve(&entry.path)
+                .and_then(|block| match block {
+                    doc::Block::Heading { inlines, .. } => {
+                        Some(markup::walk_inlines(inlines, doc, None).text)
+                    }
+                    _ => None,
+                })
+                .unwrap_or_default();
+            (entry.level, text)
+        })
+        .collect()
+}
+
+fn rebuild_toc(app: &Rc<App>, rows: &[(u8, String)]) {
     while let Some(row) = app.ui.toc_list.first_child() {
         app.ui.toc_list.remove(&row);
     }
-    let doc = &app.state.borrow().doc;
-    for entry in headings {
-        let text = doc
-            .resolve(&entry.path)
-            .and_then(|block| match block {
-                doc::Block::Heading { inlines, .. } => {
-                    Some(markup::walk_inlines(inlines, doc, None).text)
-                }
-                _ => None,
-            })
-            .unwrap_or_default();
-        let label = gtk::Label::new(Some(&text));
+    for (level, text) in rows {
+        let label = gtk::Label::new(Some(text));
         label.set_xalign(0.0);
         label.set_ellipsize(gtk::pango::EllipsizeMode::End);
-        label.set_margin_start(6 + entry.level.saturating_sub(1) as i32 * 14);
+        label.set_margin_start(6 + level.saturating_sub(1) as i32 * 14);
         label.set_css_classes(&["mv-toc-row"]);
         let row = gtk::ListBoxRow::new();
         row.set_child(Some(&label));
@@ -820,7 +832,7 @@ fn rebuild_toc(app: &Rc<App>, headings: &[TocEntry]) {
         let row_text = if text.is_empty() {
             "(untitled heading)".to_owned()
         } else {
-            text
+            text.clone()
         };
         row.update_property(&[gtk::accessible::Property::Label(&format!(
             "Jump to {}",
