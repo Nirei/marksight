@@ -9,7 +9,6 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use std::time::{Duration, Instant};
 
 use gtk::gdk;
 use gtk::glib;
@@ -172,11 +171,13 @@ pub struct ChunkedRenderer {
     next_block: usize,
     next_footnote: usize,
     footnotes_started: bool,
-    /// A table whose rows are still streaming in: tables are the most
-    /// expensive widget to measure, so they attach one row per unit.
+    /// A table whose rows are still streaming in: a table is a sequence of
+    /// row units so its layout cost lands incrementally like any other
+    /// content.
     pending_table: Option<PendingTable>,
-    /// Row cap for the initial slice (see [`ChunkedRenderer::render_initial`]).
-    table_cap: Option<usize>,
+    /// Characters of document text in the unit last attached; the streaming
+    /// budget counts these (see [`ChunkedRenderer::render_units`]).
+    last_chars: usize,
 }
 
 struct PendingTable {
@@ -207,7 +208,7 @@ impl ChunkedRenderer {
             next_footnote: 0,
             footnotes_started: false,
             pending_table: None,
-            table_cap: None,
+            last_chars: 0,
         }
     }
 
@@ -220,36 +221,23 @@ impl ChunkedRenderer {
     /// Build units until `budget` is spent. Returns true once the whole
     /// document, footnotes included, is in the tree; at least one unit is
     /// built per call, so progress is guaranteed even with a zero budget.
-    pub fn render_for(&mut self, budget: Duration) -> bool {
-        let deadline = Instant::now() + budget;
+    /// Attach content until roughly `char_budget` characters of document
+    /// text have landed. The budget counts text because layout, not
+    /// construction, is the expensive part, and layout cost scales with the
+    /// amount of wrapped text: paragraphs, table rows, and code all account
+    /// alike, with no special cases per structure. At least one unit is
+    /// always attached, so progress never stalls.
+    pub fn render_units(&mut self, char_budget: usize) -> bool {
+        let mut spent = 0usize;
         loop {
-            if self.cap_blocks_progress() {
-                return false;
-            }
-            if self.render_unit() {
+            let done = self.render_unit();
+            spent += self.last_chars;
+            if done {
                 return true;
             }
-            if Instant::now() >= deadline {
+            if spent >= char_budget {
                 return false;
             }
-        }
-    }
-
-    /// First slice: like [`render_for`], but a table stops after `table_rows`
-    /// attached rows. Rows build fast yet measure slowly, so a build-time
-    /// budget alone would let hundreds of rows into the tree the window must
-    /// measure before it can map.
-    pub fn render_initial(&mut self, budget: Duration, table_rows: usize) -> bool {
-        self.table_cap = Some(table_rows);
-        let done = self.render_for(budget);
-        self.table_cap = None;
-        done
-    }
-
-    fn cap_blocks_progress(&self) -> bool {
-        match (&self.pending_table, self.table_cap) {
-            (Some(pending), Some(cap)) => pending.row >= cap,
-            _ => false,
         }
     }
 
@@ -282,6 +270,7 @@ impl ChunkedRenderer {
             next_footnote,
             footnotes_started,
             pending_table,
+            last_chars,
             ..
         } = self;
         let ctx = RenderCtx {
@@ -301,6 +290,10 @@ impl ChunkedRenderer {
             } else {
                 (&rows[pending.row - head.len()], false)
             };
+            *last_chars = cells
+                .iter()
+                .map(|cell| markup::walk_inlines(cell, doc, None).text.len())
+                .sum();
             attach_table_row(
                 &pending.grid,
                 cells,
@@ -325,7 +318,9 @@ impl ChunkedRenderer {
                     block: *next_block,
                     row: 0,
                 });
+                *last_chars = 1;
             } else {
+                *last_chars = markup::block_text(&doc.blocks[*next_block], doc).len();
                 render_block(&doc.blocks[*next_block], column, &ctx, groups, 1);
             }
             *next_block += 1;
@@ -336,16 +331,18 @@ impl ChunkedRenderer {
                 *footnotes_started = true;
                 start_footnotes(column);
             }
-            render_footnote_row(
-                *next_footnote,
-                &doc.footnotes[*next_footnote],
-                column,
-                &ctx,
-                groups,
-            );
+            let footnote = &doc.footnotes[*next_footnote];
+            *last_chars = footnote
+                .blocks
+                .iter()
+                .map(|block| markup::block_text(block, doc).len())
+                .sum::<usize>()
+                + footnote.label.len();
+            render_footnote_row(*next_footnote, footnote, column, &ctx, groups);
             *next_footnote += 1;
             return false;
         }
+        *last_chars = 0;
         true
     }
 }

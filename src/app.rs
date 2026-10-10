@@ -34,16 +34,13 @@ const CSS: &str = include_str!("../resources/marksight.css");
 const LOGO_SVG: &str = include_str!("../data/logo/marksight-logo.svg");
 const FIND_DEBOUNCE: Duration = Duration::from_millis(120);
 const FIND_POLL: Duration = Duration::from_millis(40);
-/// Time-boxed content building: the first slice is what the window maps with,
-/// the rest streams in bounded slices so the loop never stalls on one giant
-/// build. At least one unit is always built per call.
-const FIRST_SLICE: Duration = Duration::from_millis(16);
-/// Table rows are cheap to build but expensive to measure, so the first slice
-/// caps them instead of trusting the build budget: a few header rows are
-/// enough for the window to land, the rest streams in.
-const INITIAL_TABLE_ROWS: usize = 6;
-const STREAM_INTERVAL: Duration = Duration::from_millis(10);
-const STREAM_BUDGET: Duration = Duration::from_millis(8);
+/// Content arrives by characters of document text, not by build time: layout
+/// is the cost, layout scales with wrapped text, and characters count every
+/// structure alike. The first slice aims at roughly a screen of text; each
+/// stream tick adds a bounded amount on top while the window is visible.
+const INITIAL_CHARS: usize = 3500;
+const STREAM_CHARS: usize = 1200;
+const STREAM_INTERVAL: Duration = Duration::from_millis(16);
 
 enum LoadMsg {
     Loaded { path: PathBuf, doc: Document },
@@ -712,7 +709,7 @@ fn apply_doc(app: &Rc<App>, path: &Path, parsed: Document) {
         state.render_generation += 1;
         state.render_generation
     };
-    renderer.render_initial(FIRST_SLICE, INITIAL_TABLE_ROWS);
+    renderer.render_units(INITIAL_CHARS);
     timing::mark("first-slice-built");
 
     if let Some(viewport) = app.ui.scrolled.child().and_downcast::<gtk::Viewport>() {
@@ -756,7 +753,7 @@ fn apply_doc(app: &Rc<App>, path: &Path, parsed: Document) {
                 return glib::ControlFlow::Break;
             }
         }
-        if !renderer.render_for(STREAM_BUDGET) {
+        if !renderer.render_units(STREAM_CHARS) {
             return glib::ControlFlow::Continue;
         }
         let (doc, rendered) = renderer.finish();
