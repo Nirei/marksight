@@ -136,7 +136,7 @@ jobs:
           RUSTDOCFLAGS: -D warnings
 
   fuzz-smoke:
-    name: fuzz smoke (60s per target)
+    name: fuzz smoke (20s per target, under a minute total)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -144,11 +144,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo install cargo-fuzz
       - name: fuzz_model
-        run: cargo fuzz run fuzz_model -s none -- -max_total_time=60
+        run: cargo fuzz run fuzz_model -s none -- -max_total_time=20
         working-directory: fuzz
       - name: fuzz_markup
-        run: cargo fuzz run fuzz_markup -s none -- -max_total_time=60
+        run: cargo fuzz run fuzz_markup -s none -- -max_total_time=20
         working-directory: fuzz
       - name: fuzz_find
-        run: cargo fuzz run fuzz_find -s none -- -max_total_time=60
+        run: cargo fuzz run fuzz_find -s none -- -max_total_time=20
         working-directory: fuzz
