@@ -43,10 +43,17 @@ pub fn find(index: &TextIndex, needle: &str) -> Vec<Match> {
     if needle.trim().is_empty() {
         return Vec::new();
     }
-    let needle: Vec<char> = needle.to_lowercase().chars().collect();
+    // Lowercase one char at a time, keeping only the first char of any
+    // expansion: 'İ' lowercases to two chars ("i" + combining dot above),
+    // which makes the haystack longer than the entry and shifts every
+    // later match off the original text. A 1:1 fold keeps Match offsets
+    // valid indices into the original entry, which is what highlighting
+    // consumes.
+    let fold = |c: char| c.to_lowercase().next().unwrap_or(c);
+    let needle: Vec<char> = needle.chars().map(fold).collect();
     let mut matches = Vec::new();
     for (entry, text) in index.entries.iter().enumerate() {
-        let haystack: Vec<char> = text.to_lowercase().chars().collect();
+        let haystack: Vec<char> = text.chars().map(fold).collect();
         let mut at = 0;
         while at + needle.len() <= haystack.len() {
             if haystack[at..at + needle.len()] == needle[..] {
@@ -234,6 +241,39 @@ mod tests {
         assert_eq!(entry_ranges(&matches, 0), vec![0..2, 3..5]);
         assert_eq!(entry_ranges(&matches, 1), vec![3..5]);
         assert_eq!(entry_ranges(&matches, 7), vec![]);
+    }
+
+    #[test]
+    fn fold_keeps_match_offsets_in_bounds() {
+        // 'İ' lowercases to two chars ("i" + combining dot); the haystack
+        // must stay index-aligned with the entry or matches after it run
+        // out of bounds. Found by fuzz_find.
+        let idx = index("İx");
+        assert_eq!(idx.entries[0].chars().count(), 2);
+        assert_eq!(
+            find(&idx, "x"),
+            vec![Match {
+                entry: 0,
+                start: 1,
+                end: 2
+            }]
+        );
+        assert_eq!(
+            find(&idx, "i"),
+            vec![Match {
+                entry: 0,
+                start: 0,
+                end: 1
+            }]
+        );
+        assert_eq!(
+            find(&idx, "ix"),
+            vec![Match {
+                entry: 0,
+                start: 0,
+                end: 2
+            }]
+        );
     }
 
     #[test]
