@@ -73,8 +73,11 @@ fn welcome_page_visible(mv: &std::rc::Rc<app::App>) {
 fn open_document(mv: &std::rc::Rc<app::App>) {
     mv.open_path(&fixture("kitchen-sink.md"));
     assert!(
-        pump_until(Duration::from_secs(5), || mv.visible_page() == "doc"),
-        "document page never appeared"
+        pump_until(
+            Duration::from_secs(5),
+            || mv.visible_page() == "doc" && mv.rendering_complete()
+        ),
+        "document page never appeared or never finished streaming"
     );
     assert!(
         mv.label_group_count() > 5,

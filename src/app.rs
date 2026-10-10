@@ -24,7 +24,7 @@ use gtk::{self as gtk};
 use crate::doc::{self, Document, TocEntry};
 use crate::find::{self, Match, TextIndex};
 use crate::markup;
-use crate::render::{self, RenderCtx, RenderedDoc};
+use crate::render::{self, RenderedDoc};
 use crate::timing;
 use crate::watch::FileWatcher;
 
@@ -34,6 +34,16 @@ const CSS: &str = include_str!("../resources/marksight.css");
 const LOGO_SVG: &str = include_str!("../data/logo/marksight-logo.svg");
 const FIND_DEBOUNCE: Duration = Duration::from_millis(120);
 const FIND_POLL: Duration = Duration::from_millis(40);
+/// Time-boxed content building: the first slice is what the window maps with,
+/// the rest streams in bounded slices so the loop never stalls on one giant
+/// build. At least one unit is always built per call.
+const FIRST_SLICE: Duration = Duration::from_millis(16);
+/// Table rows are cheap to build but expensive to measure, so the first slice
+/// caps them instead of trusting the build budget: a few header rows are
+/// enough for the window to land, the rest streams in.
+const INITIAL_TABLE_ROWS: usize = 6;
+const STREAM_INTERVAL: Duration = Duration::from_millis(10);
+const STREAM_BUDGET: Duration = Duration::from_millis(8);
 
 enum LoadMsg {
     Loaded { path: PathBuf, doc: Document },
@@ -70,6 +80,8 @@ struct State {
     find_needle: String,
     find_active: Option<usize>,
     scroll_generation: u64,
+    render_generation: u64,
+    render_complete: bool,
 }
 
 impl State {
@@ -87,6 +99,8 @@ impl State {
             find_needle: String::new(),
             find_active: None,
             scroll_generation: 0,
+            render_generation: 0,
+            render_complete: false,
         }
     }
 }
@@ -564,6 +578,12 @@ impl App {
             .unwrap_or_default()
     }
 
+    /// True once the progressive render has built the whole document and
+    /// find/TOC are available.
+    pub fn rendering_complete(&self) -> bool {
+        self.state.borrow().render_complete
+    }
+
     pub fn current_doc_len(&self) -> usize {
         self.state.borrow().doc.blocks.len()
     }
@@ -641,6 +661,7 @@ fn show_error(app: &Rc<App>, path: &Path, message: &str) {
     state.path = None;
     state.watcher = None;
     state.rendered = None;
+    state.render_complete = false;
     app.present_if_hidden();
 }
 
@@ -672,57 +693,91 @@ fn apply_doc(app: &Rc<App>, path: &Path, parsed: Document) {
     };
 
     let base_dir = path.parent().map(Path::to_path_buf);
-    let ctx = RenderCtx {
-        doc: &parsed,
-        base_dir: base_dir.as_deref(),
-        link_handler,
-        anchors: anchors.clone(),
-        toc_targets: toc_targets.clone(),
-    };
-    let rendered = render::render(&ctx);
-    timing::mark("widgets-rendered");
-    if let Some(viewport) = app.ui.scrolled.child().and_downcast::<gtk::Viewport>() {
-        viewport.set_child(Some(&rendered.root));
-    }
-    app.ui.scrolled.vadjustment().set_value(0.0);
-
-    let index = TextIndex {
-        entries: rendered.groups.iter().map(|g| g.text(&parsed)).collect(),
-    };
     let headings = parsed.headings.clone();
     let file_name = path
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_else(|| "marksight".to_owned());
+    let has_toc = !headings.is_empty();
+
+    let mut renderer = render::ChunkedRenderer::new(
+        parsed,
+        base_dir,
+        link_handler,
+        anchors.clone(),
+        toc_targets.clone(),
+    );
+    let generation = {
+        let mut state = app.state.borrow_mut();
+        state.render_generation += 1;
+        state.render_generation
+    };
+    renderer.render_initial(FIRST_SLICE, INITIAL_TABLE_ROWS);
+    timing::mark("first-slice-built");
+
+    if let Some(viewport) = app.ui.scrolled.child().and_downcast::<gtk::Viewport>() {
+        viewport.set_child(Some(renderer.root()));
+    }
+    app.ui.scrolled.vadjustment().set_value(0.0);
 
     {
         let mut state = app.state.borrow_mut();
-        state.path = Some(path.to_path_buf());
-        state.doc = parsed;
-        state.index = index;
-        state.rendered = Some(rendered);
+        state.rendered = None;
         state.matches.clear();
         state.active = None;
-        state.toc_targets = toc_targets.borrow().clone();
+        state.toc_targets.clear();
+        state.render_complete = false;
     }
 
-    rebuild_toc(app, &headings);
     app.ui.stack.set_visible_child_name("doc");
     app.ui.window.set_title(Some(&file_name));
     app.ui.title_label.set_text(&file_name);
     app.ui.path_label.set_text(&path.display().to_string());
-    let has_toc = !headings.is_empty();
-    app.ui.toc_column.set_visible(has_toc);
-    app.ui.toc_button.set_active(has_toc);
+    // The sidebar fills and appears when the stream completes; the button is
+    // already correct for this document.
+    app.ui.toc_column.set_visible(false);
+    app.ui.toc_button.set_active(false);
     app.ui.toc_button.set_visible(has_toc);
     app.ui.match_counter.set_text("");
-
-    let needle = app.ui.search_entry.text().to_string();
-    if app.ui.search_bar.is_search_mode() && !needle.trim().is_empty() {
-        run_find(app, &needle);
-    }
     app.present_if_hidden();
     timing::mark("present-called");
+
+    let stream_app = app.clone();
+    let stream_path = path.to_path_buf();
+    glib::timeout_add_local(STREAM_INTERVAL, move || {
+        {
+            let state = stream_app.state.borrow();
+            let superseded = state.path.as_deref() != Some(&stream_path)
+                || state.render_generation != generation;
+            if superseded || state.render_complete {
+                return glib::ControlFlow::Break;
+            }
+        }
+        if !renderer.render_for(STREAM_BUDGET) {
+            return glib::ControlFlow::Continue;
+        }
+        let (doc, rendered) = renderer.finish();
+        timing::mark("render-complete");
+        let index = TextIndex {
+            entries: rendered.groups.iter().map(|g| g.text(&doc)).collect(),
+        };
+        {
+            let mut state = stream_app.state.borrow_mut();
+            state.doc = doc;
+            state.index = index;
+            state.rendered = Some(rendered);
+            state.render_complete = true;
+            state.toc_targets = toc_targets.borrow().clone();
+        }
+        rebuild_toc(&stream_app, &headings);
+        stream_app.ui.toc_column.set_visible(has_toc);
+        stream_app.ui.toc_button.set_active(has_toc);
+        let needle = stream_app.ui.search_entry.text().to_string();
+        if stream_app.ui.search_bar.is_search_mode() && !needle.trim().is_empty() {
+            run_find(&stream_app, &needle);
+        }
+        glib::ControlFlow::Break
+    });
 }
 
 impl App {
