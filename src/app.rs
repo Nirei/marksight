@@ -123,6 +123,12 @@ pub fn run() -> glib::ExitCode {
     app.connect_open(|app, files, _| {
         timing::mark("open-signal");
         let application = ensure_window(app);
+        for extra in files.iter().skip(1) {
+            eprintln!(
+                "marksight: ignoring extra file {} (one document per window)",
+                extra.path().unwrap_or_default().display()
+            );
+        }
         match files.first().and_then(|f| f.path()) {
             Some(path) => application.open_path(&path),
             None => application.present_if_hidden(),
@@ -531,30 +537,40 @@ fn open_dialog(app: &Rc<App>) {
 }
 
 impl App {
+    // Test hooks for the GUI smoke suite: they poke at widgets and state in
+    // ways no library user should rely on, so they are hidden from the docs
+    // and excluded from the semver surface.
+    #[doc(hidden)]
     pub fn search_set(&self, text: &str) {
         self.ui.search_entry.set_text(text);
     }
 
+    #[doc(hidden)]
     pub fn search_counter(&self) -> String {
         self.ui.match_counter.text().to_string()
     }
 
+    #[doc(hidden)]
     pub fn toc_row_count(&self) -> i32 {
         self.ui.toc_list.observe_children().n_items() as i32
     }
 
+    #[doc(hidden)]
     pub fn toc_list(&self) -> &gtk::ListBox {
         &self.ui.toc_list
     }
 
+    #[doc(hidden)]
     pub fn heading_widget(&self, index: usize) -> Option<gtk::Widget> {
         self.state.borrow().toc_targets.get(index).cloned()
     }
 
+    #[doc(hidden)]
     pub fn doc_scrolled(&self) -> gtk::ScrolledWindow {
         self.ui.scrolled.clone()
     }
 
+    #[doc(hidden)]
     pub fn debug_label_states(&self) -> Vec<String> {
         let state = self.state.borrow();
         state
@@ -564,14 +580,17 @@ impl App {
             .unwrap_or_default()
     }
 
+    #[doc(hidden)]
     pub fn search_emit_activate(&self) {
         self.ui.search_entry.emit_by_name::<()>("activate", &[]);
     }
 
+    #[doc(hidden)]
     pub fn scroll_value(&self) -> f64 {
         self.ui.scrolled.vadjustment().value()
     }
 
+    #[doc(hidden)]
     pub fn label_group_count(&self) -> usize {
         self.state
             .borrow()
@@ -581,6 +600,7 @@ impl App {
             .unwrap_or(0)
     }
 
+    #[doc(hidden)]
     pub fn visible_page(&self) -> String {
         self.ui
             .stack
@@ -591,12 +611,14 @@ impl App {
 
     /// True once the progressive render has built the whole document and
     /// find/TOC are available.
+    #[doc(hidden)]
     pub fn rendering_complete(&self) -> bool {
         self.state.borrow().render_complete
     }
 
     /// Allocated (width, height) of every picture in the current document;
     /// test hook for image-layout regressions.
+    #[doc(hidden)]
     pub fn picture_sizes(&self) -> Vec<(i32, i32)> {
         let mut out = Vec::new();
         if let Some(viewport) = self.ui.scrolled.child().and_downcast::<gtk::Viewport>() {
@@ -607,6 +629,7 @@ impl App {
         out
     }
 
+    #[doc(hidden)]
     pub fn current_doc_len(&self) -> usize {
         self.state.borrow().doc.blocks.len()
     }
@@ -699,7 +722,9 @@ fn apply_doc(app: &Rc<App>, path: &Path, parsed: Document) {
         let anchors = anchors.clone();
         let app_for_links = app.clone();
         Rc::new(move |uri: &str| {
-            if let Some(anchor) = uri.strip_prefix("#fn-") {
+            if let Some(anchor) = uri.strip_prefix('#') {
+                // In-document targets: footnote rows ("#fn-N") and heading
+                // anchors from explicit {#id} attributes share one map.
                 let target = anchors.borrow().get(anchor).cloned();
                 if let Some(target) = target {
                     scroll_to(&app_for_links, &target);
@@ -707,9 +732,9 @@ fn apply_doc(app: &Rc<App>, path: &Path, parsed: Document) {
                 }
                 return false;
             }
-            if uri.starts_with('#') {
-                return false;
-            }
+            // Always stop propagation, also for refused schemes: letting
+            // GTK fall through would hand the URI to the default launcher
+            // and bypass the allowlist.
             launch_uri(uri);
             true
         })
@@ -901,7 +926,27 @@ fn apply_scroll(scrolled: &gtk::ScrolledWindow, target: &gtk::Widget) {
 }
 
 fn launch_uri(uri: &str) {
+    if !is_launchable_uri(uri) {
+        let shown: String = uri.chars().take(120).collect();
+        eprintln!("marksight: refusing to open link (scheme not allowed): {shown}");
+        return;
+    }
     gtk::UriLauncher::new(uri).launch(None::<&gtk::Window>, None::<&gtk::gio::Cancellable>, |_| {});
+}
+
+/// Documents arrive from untrusted sources, so external links go through
+/// a short allowlist. Only these schemes are handed to the system launcher;
+/// everything else (javascript:, data:, file:, custom handlers, relative
+/// paths) is refused, because a viewer that renders no HTML and runs no
+/// scripts should not become a trampoline for them either.
+fn is_launchable_uri(uri: &str) -> bool {
+    let Some((scheme, _rest)) = uri.split_once(':') else {
+        return false;
+    };
+    matches!(
+        scheme.to_ascii_lowercase().as_str(),
+        "http" | "https" | "mailto"
+    )
 }
 
 fn schedule_find(app: &Rc<App>) {
@@ -1018,4 +1063,24 @@ fn rgba_hex(color: gdk::RGBA) -> String {
         to_byte(color.blue()),
         to_byte(color.alpha())
     )
+}
+#[cfg(test)]
+mod tests {
+    use super::is_launchable_uri;
+
+    #[test]
+    fn uri_allowlist_accepts_only_web_and_mail() {
+        assert!(is_launchable_uri("https://example.com/a?b=c"));
+        assert!(is_launchable_uri("http://example.com"));
+        assert!(is_launchable_uri("HTTP://EXAMPLE.COM"));
+        assert!(is_launchable_uri("mailto:someone@example.com"));
+        assert!(!is_launchable_uri("javascript:alert(1)"));
+        assert!(!is_launchable_uri("JaVaScRiPt:alert(1)"));
+        assert!(!is_launchable_uri("data:text/html;base64,PHNjcmlwdD4="));
+        assert!(!is_launchable_uri("file:///etc/passwd"));
+        assert!(!is_launchable_uri("gopher://example.com"));
+        assert!(!is_launchable_uri("example.com/relative"));
+        assert!(!is_launchable_uri(""));
+        assert!(!is_launchable_uri("#fragment"));
+    }
 }
