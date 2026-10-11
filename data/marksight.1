@@ -13,6 +13,10 @@ dropped, never rendered.
 .PP
 The viewed file is watched for changes and re-rendered shortly after every
 save. A table-of-contents sidebar and find-in-document are built in.
+Links to web pages (http, https) and email addresses (mailto) open in the
+system's configured application; every other link scheme is ignored.
+In-document links jump to footnotes and to headings that carry an explicit
+{#id} attribute.
 .SH OPTIONS
 .TP
 .BR \-h ", " \-\-help
