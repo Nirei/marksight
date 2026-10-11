@@ -40,7 +40,7 @@ fn arb_inlines() -> impl Strategy<Value = String> {
 }
 
 fn arb_code_body() -> impl Strategy<Value = String> {
-    collection::vec("[^`\\n]{0,20}", 0..4).prop_map(|lines| lines.join("\\n"))
+    collection::vec("[^`\\n]{0,20}", 0..4).prop_map(|lines| lines.join("\n"))
 }
 
 fn arb_table() -> impl Strategy<Value = String> {
@@ -73,8 +73,8 @@ fn arb_block() -> BoxedStrategy<String> {
     prop_oneof![
         3 => (1u8..7, arb_inlines()).prop_map(|(level, text)| format!("{} {}", "#".repeat(level as usize), text)),
         4 => arb_inlines(),
-        2 => (plain(), arb_code_body()).prop_map(|(info, body)| format!("```{info}\\n{body}\\n```")),
-        1 => arb_code_body().prop_map(|body| body.lines().map(|l| format!("    {l}")).collect::<Vec<_>>().join("\\n")),
+        2 => (plain(), arb_code_body()).prop_map(|(info, body)| format!("```{info}\n{body}\n```")),
+        1 => arb_code_body().prop_map(|body| body.lines().map(|l| format!("    {l}")).collect::<Vec<_>>().join("\n")),
         1 => plain().prop_map(|t| format!("> {t}")),
         1 => (arb_inlines(), proptest::bool::ANY).prop_map(|(t, task)| {
             if task { format!("- [x] {t}") } else { format!("- {t}") }
@@ -83,13 +83,13 @@ fn arb_block() -> BoxedStrategy<String> {
         1 => arb_table(),
         1 => Just("---".to_owned()),
         1 => plain().prop_map(|t| format!("<div>{t}</div>")),
-        1 => plain().prop_map(|t| format!("> [!NOTE]\\n> {t}")),
+        1 => plain().prop_map(|t| format!("> [!NOTE]\n> {t}")),
     ]
     .boxed()
 }
 
 fn arb_markdown() -> impl Strategy<Value = String> {
-    collection::vec(arb_block(), 0..15).prop_map(|blocks| blocks.join("\\n\\n"))
+    collection::vec(arb_block(), 0..15).prop_map(|blocks| blocks.join("\n\n"))
 }
 
 fn inlines_of(block: &Block) -> Option<&Vec<Inline>> {
