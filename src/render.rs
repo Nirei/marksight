@@ -21,6 +21,12 @@ use crate::markup::{self, Highlight};
 
 pub type LinkHandler = Rc<dyn Fn(&str) -> bool>;
 
+/// Upper bound on image file size handed to the decoder. Decoding still
+/// runs on the main thread; this bounds the input so a stray oversized file
+/// degrades to the fallback label instead of stalling the loop on read and
+/// decode of arbitrarily large data.
+const IMAGE_MAX_FILE_BYTES: u64 = 64 * 1024 * 1024;
+
 pub struct RenderCtx<'a> {
     pub doc: &'a Document,
     pub base_dir: Option<&'a Path>,
@@ -420,39 +426,12 @@ fn attach_table_row(
         if is_head {
             classes.push("mv-cell-head");
         }
-        let label = gtk::Label::new(None);
-        label.set_css_classes(&classes);
-        label.set_wrap(true);
-        label.set_wrap_mode(pango::WrapMode::WordChar);
-        label.set_valign(gtk::Align::Start);
         let xalign = aligns
             .get(column)
             .map(|a| alignment_xalign(*a))
             .unwrap_or(0.0);
-        label.set_xalign(xalign);
-        label.set_hexpand(true);
-        label.connect_activate_link({
-            let handler = ctx.link_handler.clone();
-            move |_, uri| link_activate(&handler, uri)
-        });
-        let walk = markup::walk_inlines(cell, ctx.doc, None);
-        let base = walk
-            .segments
-            .first()
-            .map(|s| s.markup.clone())
-            .unwrap_or_default();
-        label.set_markup(&base);
-        groups.push(LabelGroup {
-            entry: 0,
-            source: Source::Inlines(Rc::new(cell.clone())),
-            labels: vec![LabelSlot {
-                label: label.clone(),
-                segment: 0,
-                base_markup: base.clone(),
-                current: RefCell::new(base),
-            }],
-        });
-        table.attach(&label, column as i32, row_index as i32, 1, 1);
+        let widget = inline_widget(cell, &classes, xalign, ctx, groups);
+        table.attach(&widget, column as i32, row_index as i32, 1, 1);
     }
 }
 
@@ -476,12 +455,15 @@ fn render_block(
     depth: usize,
 ) {
     match block {
-        Block::Heading { level, inlines, .. } => {
+        Block::Heading { level, id, inlines } => {
             let css = format!("mv-h{level}");
             let widget = render_inlines(inlines, &["mv-para", &css], ctx, groups);
             widget.update_property(&[gtk::accessible::Property::Label(
                 &markup::walk_inlines(inlines, ctx.doc, None).text,
             )]);
+            if let Some(id) = id {
+                ctx.anchors.borrow_mut().insert(id.clone(), widget.clone());
+            }
             ctx.toc_targets.borrow_mut().push(widget.clone());
             into.append(&widget);
         }
@@ -623,89 +605,12 @@ fn alert_title(kind: BlockQuoteKind) -> &'static str {
     }
 }
 
-fn render_inlines(
-    inlines: &[Inline],
-    css: &[&str],
-    ctx: &RenderCtx<'_>,
-    groups: &mut Vec<LabelGroup>,
-) -> gtk::Widget {
-    let walk = markup::walk_inlines(inlines, ctx.doc, None);
-    if walk.images.is_empty() {
-        let label = gtk::Label::new(None);
-        label.set_css_classes(css);
-        label.set_xalign(0.0);
-        label.set_valign(gtk::Align::Start);
-        label.set_wrap(true);
-        label.set_wrap_mode(pango::WrapMode::WordChar);
-        label.set_hexpand(true);
-        label.connect_activate_link({
-            let handler = ctx.link_handler.clone();
-            move |_, uri| link_activate(&handler, uri)
-        });
-        let base = walk
-            .segments
-            .first()
-            .map(|s| s.markup.clone())
-            .unwrap_or_default();
-        label.set_markup(&base);
-        groups.push(LabelGroup {
-            entry: 0,
-            source: Source::Inlines(Rc::new(inlines.to_vec())),
-            labels: vec![LabelSlot {
-                label: label.clone(),
-                segment: 0,
-                base_markup: base.clone(),
-                current: RefCell::new(base),
-            }],
-        });
-        label.upcast::<gtk::Widget>()
-    } else {
-        let box_ = gtk::Box::new(gtk::Orientation::Vertical, 4);
-        box_.set_hexpand(true);
-        for (index, image) in walk.images.iter().enumerate() {
-            if let Some(segment) = walk.segments.get(index) {
-                if !segment.markup.trim().is_empty() {
-                    let label = labeled(
-                        segment.markup.clone(),
-                        css,
-                        ctx,
-                        groups,
-                        Rc::new(inlines.to_vec()),
-                        index,
-                    );
-                    box_.append(&label);
-                }
-            }
-            box_.append(&picture_for(image, ctx));
-        }
-        if let Some(last) = walk.segments.get(walk.images.len()) {
-            if !last.markup.trim().is_empty() {
-                let label = labeled(
-                    last.markup.clone(),
-                    css,
-                    ctx,
-                    groups,
-                    Rc::new(inlines.to_vec()),
-                    walk.images.len(),
-                );
-                box_.append(&label);
-            }
-        }
-        box_.upcast::<gtk::Widget>()
-    }
-}
-
-fn labeled(
-    markup: String,
-    css: &[&str],
-    ctx: &RenderCtx<'_>,
-    groups: &mut Vec<LabelGroup>,
-    inlines: Rc<Vec<Inline>>,
-    segment: usize,
-) -> gtk::Label {
+/// A wrapping, link-handling text label with the shared marksight text
+/// setup. Every label that shows document markup goes through here.
+fn text_label(css: &[&str], xalign: f32, ctx: &RenderCtx<'_>) -> gtk::Label {
     let label = gtk::Label::new(None);
     label.set_css_classes(css);
-    label.set_xalign(0.0);
+    label.set_xalign(xalign);
     label.set_valign(gtk::Align::Start);
     label.set_wrap(true);
     label.set_wrap_mode(pango::WrapMode::WordChar);
@@ -714,34 +619,106 @@ fn labeled(
         let handler = ctx.link_handler.clone();
         move |_, uri| link_activate(&handler, uri)
     });
-    label.set_markup(&markup);
+    label
+}
+
+/// Builds the widget for one run of inlines and registers it as a single
+/// [`LabelGroup`]: one find entry per block, one label slot per text
+/// segment. A block containing images becomes a vertical box of text labels
+/// and pictures, so images in paragraphs and in table cells render, and the
+/// match counter counts each match once.
+fn inline_widget(
+    inlines: &[Inline],
+    css: &[&str],
+    xalign: f32,
+    ctx: &RenderCtx<'_>,
+    groups: &mut Vec<LabelGroup>,
+) -> gtk::Widget {
+    let walk = markup::walk_inlines(inlines, ctx.doc, None);
+    let source = Source::Inlines(Rc::new(inlines.to_vec()));
+    let mut slots: Vec<LabelSlot> = Vec::new();
+    let widget = if walk.images.is_empty() {
+        let label = text_label(css, xalign, ctx);
+        if let Some(segment) = walk.segments.first() {
+            label.set_markup(&segment.markup);
+            slots.push(LabelSlot {
+                label: label.clone(),
+                segment: 0,
+                base_markup: segment.markup.clone(),
+                current: RefCell::new(segment.markup.clone()),
+            });
+        }
+        label.upcast::<gtk::Widget>()
+    } else {
+        let box_ = gtk::Box::new(gtk::Orientation::Vertical, 4);
+        box_.set_hexpand(true);
+        // segments[i] is the text before images[i] (the markup walker
+        // forces a segment slot at every image boundary), and the last
+        // segment, when present, is the text after the final image.
+        let mut push_segment = |segment: &markup::Segment, index: usize, box_: &gtk::Box| {
+            if segment.markup.trim().is_empty() {
+                return;
+            }
+            let label = text_label(css, xalign, ctx);
+            label.set_markup(&segment.markup);
+            box_.append(&label);
+            slots.push(LabelSlot {
+                label,
+                segment: index,
+                base_markup: segment.markup.clone(),
+                current: RefCell::new(segment.markup.clone()),
+            });
+        };
+        for (index, image) in walk.images.iter().enumerate() {
+            if let Some(segment) = walk.segments.get(index) {
+                push_segment(segment, index, &box_);
+            }
+            box_.append(&picture_for(image, ctx));
+        }
+        if let Some(last) = walk.segments.get(walk.images.len()) {
+            push_segment(last, walk.images.len(), &box_);
+        }
+        box_.upcast::<gtk::Widget>()
+    };
     groups.push(LabelGroup {
         entry: 0,
-        source: Source::Inlines(inlines),
-        labels: vec![LabelSlot {
-            label: label.clone(),
-            segment,
-            base_markup: markup.clone(),
-            current: RefCell::new(markup),
-        }],
+        source,
+        labels: slots,
     });
-    label
+    widget
+}
+
+fn render_inlines(
+    inlines: &[Inline],
+    css: &[&str],
+    ctx: &RenderCtx<'_>,
+    groups: &mut Vec<LabelGroup>,
+) -> gtk::Widget {
+    inline_widget(inlines, css, 0.0, ctx, groups)
 }
 
 fn picture_for(image: &markup::ImageInfo, ctx: &RenderCtx<'_>) -> gtk::Widget {
     if let Some(path) = local_image_path(&image.url, ctx.base_dir) {
-        if let Ok(texture) = gdk::Texture::from_filename(&path) {
-            let picture = gtk::Picture::for_paintable(&texture);
-            picture.set_css_classes(&["mv-image"]);
-            // Fill + ScaleDown: fill the column width so the allocated width
-            // is meaningful, scale down to fit, never upscale.
-            picture.set_content_fit(gtk::ContentFit::ScaleDown);
-            picture.set_halign(gtk::Align::Fill);
-            picture.set_can_shrink(true);
-            if !image.alt.is_empty() {
-                picture.set_tooltip_text(Some(&image.alt));
+        // Bound the bytes handed to the decoder: decoding still runs on the
+        // main thread, so an unbounded input could stall the loop and
+        // expand without limit in memory.
+        let size_ok = std::fs::metadata(&path)
+            .map(|m| m.len() <= IMAGE_MAX_FILE_BYTES)
+            .unwrap_or(false);
+        if size_ok {
+            if let Ok(texture) = gdk::Texture::from_filename(&path) {
+                let picture = gtk::Picture::for_paintable(&texture);
+                picture.set_css_classes(&["mv-image"]);
+                // Fill + ScaleDown: fill the column width so the allocated width
+                // is meaningful, scale down to fit, never upscale.
+                picture.set_content_fit(gtk::ContentFit::ScaleDown);
+                picture.set_halign(gtk::Align::Fill);
+                picture.set_can_shrink(true);
+                if !image.alt.is_empty() {
+                    picture.set_tooltip_text(Some(&image.alt));
+                }
+                return picture.upcast::<gtk::Widget>();
             }
-            return picture.upcast::<gtk::Widget>();
         }
     }
     let fallback = gtk::Label::new(Some(&format!("🖼 {}: {}", image.alt, image.url)));
