@@ -3,6 +3,7 @@ text: Standalone image paragraph:
 markup@0: Standalone image paragraph:
 === paragraph
 text: A logo
+markup@0: 
 === paragraph
 text: Inline image with surrounding text: before inline after.
 markup@0: Inline image with surrounding text: before 
@@ -13,7 +14,7 @@ markup@0: Image as the content of a link:
 === paragraph
 text: badge
 markup@0: <a href="https://example.com/ci"></a>
-markup@0: <a href="https://example.com/ci"></a>
+markup@5: <a href="https://example.com/ci"></a>
 === paragraph
 text: An image with empty alt: 
 markup@0: An image with empty alt: 

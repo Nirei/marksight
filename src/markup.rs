@@ -36,6 +36,10 @@ pub struct ImageInfo {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Highlight<'a> {
+    /// Matched ranges as character offsets into the walked text. They must
+    /// be sorted by start and non-overlapping, as produced by
+    /// [`crate::find::find`]; lookup is a binary search, not a linear scan,
+    /// so a block with many matches stays cheap to re-render.
     pub ranges: &'a [Range<usize>],
     pub active: Option<&'a Range<usize>>,
     pub hit_color: &'a str,
@@ -116,13 +120,17 @@ impl<'a> Walker<'a> {
         }
     }
 
-    fn boundary(&mut self) {
+    /// Ends the current segment. With `force`, an empty segment is emitted
+    /// too: every image boundary then owns a segment slot, so `segments[i]`
+    /// is always the text before `images[i]` and the renderer can pair them
+    /// positionally even when a paragraph starts with an image.
+    fn boundary(&mut self, force: bool) {
         let saved = self.open_tags.clone();
         while !self.open_tags.is_empty() {
             self.close_tag();
         }
-        if !self.markup.is_empty() {
-            let char_start = self.segment_start.unwrap_or(0);
+        if force || !self.markup.is_empty() {
+            let char_start = self.segment_start.unwrap_or(self.chars);
             self.segments.push(Segment {
                 char_start,
                 markup: std::mem::take(&mut self.markup),
@@ -139,10 +147,20 @@ impl<'a> Walker<'a> {
         if hl.active.is_some_and(|r| at >= r.start && at < r.end) {
             return 2;
         }
-        if hl.ranges.iter().any(|r| at >= r.start && at < r.end) {
-            return 1;
+        // Ranges are sorted and non-overlapping: find the first range that
+        // has not ended yet, then test it. O(log matches) per character, so
+        // a needle matching thousands of times in one block stays linear
+        // overall instead of quadratic.
+        let candidate = hl.ranges.partition_point(|r| r.end <= at);
+        if hl
+            .ranges
+            .get(candidate)
+            .is_some_and(|r| at >= r.start && at < r.end)
+        {
+            1
+        } else {
+            0
         }
-        0
     }
 
     fn emit(&mut self, raw: &str, style: Option<Style>) {
@@ -235,7 +253,7 @@ impl<'a> Walker<'a> {
 pub fn walk_inlines(inlines: &[Inline], footnotes: &Document, hl: Option<Highlight<'_>>) -> Walk {
     let mut walker = Walker::new(footnotes, hl);
     walk_into(inlines, &mut walker);
-    walker.boundary();
+    walker.boundary(false);
     Walk {
         text: walker.text,
         segments: walker.segments,
@@ -267,7 +285,7 @@ fn walk_into(inlines: &[Inline], walker: &mut Walker<'_>) {
                 walker.close_tag();
             }
             Inline::Image { url, alt, title } => {
-                walker.boundary();
+                walker.boundary(true);
                 walker.push_chars(alt);
                 walker.images.push(ImageInfo {
                     url: url.clone(),
@@ -284,7 +302,7 @@ pub fn code_markup(code: &str, hl: Option<Highlight<'_>>) -> String {
     let footnotes = Document::default();
     let mut walker = Walker::new(&footnotes, hl);
     walker.emit(code, None);
-    walker.boundary();
+    walker.boundary(false);
     walker.segments.pop().map(|s| s.markup).unwrap_or_default()
 }
 
@@ -597,6 +615,61 @@ mod tests {
         let walk = walk_inlines(inlines, &doc, None);
         assert_eq!(walk.segments[0].markup, r#"<a href="https://x"></a>"#);
         assert_eq!(walk.segments[1].markup, r#"<a href="https://x"> tail</a>"#);
+    }
+
+    #[test]
+    fn leading_image_owns_empty_leading_segment() {
+        // Regression: a paragraph starting with an image used to leave the
+        // trailing text as segments[0], so the renderer showed it before the
+        // picture. Every image boundary now owns a segment slot.
+        let doc = parse("![](i.png) after");
+        let Block::Paragraph(inlines) = &doc.blocks[0] else {
+            panic!()
+        };
+        let walk = walk_inlines(inlines, &doc, None);
+        assert_eq!(walk.images.len(), 1);
+        assert_eq!(walk.segments.len(), 2);
+        assert_eq!(walk.segments[0].markup, "");
+        assert_eq!(walk.segments[1].markup, " after");
+    }
+
+    #[test]
+    fn image_only_paragraph_has_one_empty_segment() {
+        let doc = parse("![alt](i.png)");
+        let Block::Paragraph(inlines) = &doc.blocks[0] else {
+            panic!()
+        };
+        let walk = walk_inlines(inlines, &doc, None);
+        assert_eq!(walk.segments.len(), 1);
+        assert_eq!(walk.segments[0].markup, "");
+        assert_eq!(walk.text, "alt");
+    }
+
+    #[test]
+    fn highlight_with_many_ranges_hits_each_char_exactly() {
+        // Exercises the binary-search lookup: dense, non-contiguous ranges
+        // over a long run must light up precisely the matched characters.
+        let doc = parse("a b a b a b a b a b a b a b a b a b a b");
+        let Block::Paragraph(inlines) = &doc.blocks[0] else {
+            panic!()
+        };
+        let text_chars = walk_inlines(inlines, &doc, None).text.chars().count();
+        // One range per 'a' (every fourth char), one active among them, and
+        // one far out-of-bounds range the walker must ignore.
+        let mut ranges: Vec<std::ops::Range<usize>> = (0..10).map(|i| i * 4..i * 4 + 1).collect();
+        ranges.push(text_chars + 100..text_chars + 101);
+        let active = ranges[7].clone();
+        let hl = Highlight {
+            ranges: &ranges,
+            active: Some(&active),
+            hit_color: "#111111",
+            active_color: "#222222",
+        };
+        let walk = walk_inlines(inlines, &doc, Some(hl));
+        let markup = walk.segments[0].markup.clone();
+        assert_eq!(markup.matches("<span background=\"#111111\">").count(), 9);
+        assert_eq!(markup.matches("<span background=\"#222222\">").count(), 1);
+        assert!(is_well_formed(&markup));
     }
 
     #[test]
