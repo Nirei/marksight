@@ -164,6 +164,16 @@ pub fn parse(markdown: &str) -> Document {
     builder.finish()
 }
 
+/// Deepest block-container nesting (nested blockquotes, lists, footnote
+/// bodies) kept as real structure. Containers nested beyond this are
+/// flattened into their parent: their blocks attach to the enclosing
+/// container instead of creating another tree level. This bounds the
+/// recursion depth of every downstream consumer (text extraction, TOC
+/// resolution, widget rendering), none of which is written iteratively; a
+/// document of `> ` repeated twenty thousand times must degrade to flat
+/// text, not overflow the stack.
+const MAX_CONTAINER_DEPTH: usize = 256;
+
 enum Frame {
     Root,
     Quote {
@@ -225,6 +235,12 @@ struct Builder {
     blocks: Vec<Block>,
     footnotes: Vec<Footnote>,
     headings: Vec<TocEntry>,
+    /// Container frames currently on the stack (quotes, lists, items,
+    /// footnote bodies), counted for [`MAX_CONTAINER_DEPTH`].
+    depth: usize,
+    /// Container starts swallowed by the depth cap whose matching end
+    /// events are still to come.
+    suppressed: usize,
 }
 
 fn append_inline(inlines: &mut Vec<Inline>, inline: Inline) {
@@ -264,7 +280,32 @@ impl Builder {
             blocks: Vec::new(),
             footnotes: Vec::new(),
             headings: Vec::new(),
+            depth: 0,
+            suppressed: 0,
         }
+    }
+
+    /// Starts a container level. Returns false when the depth cap has been
+    /// reached: the caller must not push a frame, and the matching end event
+    /// will be swallowed by [`Builder::end_container`].
+    fn begin_container(&mut self) -> bool {
+        if self.depth >= MAX_CONTAINER_DEPTH {
+            self.suppressed += 1;
+            return false;
+        }
+        self.depth += 1;
+        true
+    }
+
+    /// Ends a container level started by [`Builder::begin_container`].
+    /// Returns false when this end belongs to a suppressed start.
+    fn end_container(&mut self) -> bool {
+        if self.suppressed > 0 {
+            self.suppressed -= 1;
+            return false;
+        }
+        self.depth -= 1;
+        true
     }
 
     fn current_style(&self) -> Style {
@@ -460,6 +501,9 @@ impl Builder {
                 inlines: Vec::new(),
             }),
             Tag::BlockQuote(kind) => {
+                if !self.begin_container() {
+                    return;
+                }
                 self.flush_item_pending();
                 self.path.push(self.container_len());
                 self.stack.push(Frame::Quote {
@@ -478,6 +522,9 @@ impl Builder {
                 });
             }
             Tag::List(start) => {
+                if !self.begin_container() {
+                    return;
+                }
                 self.flush_item_pending();
                 self.path.push(self.container_len());
                 self.stack.push(Frame::List {
@@ -487,6 +534,9 @@ impl Builder {
                 });
             }
             Tag::Item => {
+                if !self.begin_container() {
+                    return;
+                }
                 self.flush_item_pending();
                 self.path.push(self.container_len());
                 self.stack.push(Frame::Item {
@@ -497,6 +547,9 @@ impl Builder {
                 });
             }
             Tag::FootnoteDefinition(label) => {
+                if !self.begin_container() {
+                    return;
+                }
                 self.flush_item_pending();
                 self.path.push(self.container_len());
                 self.stack.push(Frame::Footnote {
@@ -583,6 +636,9 @@ impl Builder {
                 }
             }
             TagEnd::BlockQuote(_) => {
+                if !self.end_container() {
+                    return;
+                }
                 self.path.pop();
                 if let Some(Frame::Quote { kind, blocks }) = self.stack.pop() {
                     self.attach(Block::Quote { kind, blocks });
@@ -594,6 +650,9 @@ impl Builder {
                 }
             }
             TagEnd::List(ordered) => {
+                if !self.end_container() {
+                    return;
+                }
                 self.path.pop();
                 if let Some(Frame::List {
                     start,
@@ -609,6 +668,9 @@ impl Builder {
                 }
             }
             TagEnd::Item => {
+                if !self.end_container() {
+                    return;
+                }
                 self.path.pop();
                 let frame = self.stack.pop();
                 if let Some(Frame::Item {
@@ -633,6 +695,9 @@ impl Builder {
                 }
             }
             TagEnd::FootnoteDefinition => {
+                if !self.end_container() {
+                    return;
+                }
                 self.path.pop();
                 if let Some(Frame::Footnote { label, blocks }) = self.stack.pop() {
                     self.footnotes.push(Footnote { label, blocks });
@@ -1227,6 +1292,45 @@ mod tests {
             "before\n\n***\n\nafter",
             vec![para("before"), Block::Rule, para("after")],
         );
+    }
+
+    #[test]
+    fn nesting_beyond_cap_flattens_without_panicking() {
+        // A 40 KB file of repeated `> ` used to overflow the stack in the
+        // recursive text/render walkers. The builder must cap the tree and
+        // flatten the rest into the deepest kept container.
+        let depth = 20_000;
+        let markdown = "> ".repeat(depth) + "bottom";
+        let doc = parse(&markdown);
+        let mut deepest = 0;
+        let mut node = doc.blocks.first();
+        while let Some(Block::Quote { blocks, .. }) = node {
+            deepest += 1;
+            node = blocks.first();
+        }
+        assert_eq!(deepest, 256, "nesting must stop at the cap");
+        assert!(
+            matches!(node, Some(Block::Paragraph(inlines)) if inlines == &vec![run("bottom")]),
+            "flattened content must survive, got {node:?}"
+        );
+    }
+
+    #[test]
+    fn nesting_beyond_cap_keeps_toc_consistent() {
+        // Headings inside the flattened region still resolve: their TOC
+        // paths are computed against the capped tree.
+        let mut markdown = String::new();
+        for _ in 0..300 {
+            markdown.push_str("> ");
+        }
+        markdown.push_str("## deep heading\n\nvisible text");
+        let doc = parse(&markdown);
+        assert_eq!(doc.headings.len(), 1);
+        let entry = &doc.headings[0];
+        assert!(matches!(
+            doc.resolve(&entry.path),
+            Some(Block::Heading { level: 2, .. })
+        ));
     }
 
     #[test]
