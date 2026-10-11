@@ -25,8 +25,12 @@ pub struct FileWatcher {
 
 impl FileWatcher {
     pub fn new(path: &Path, changed: impl Fn() + 'static) -> notify::Result<Self> {
+        // `Path::parent()` yields an empty path for a bare relative
+        // filename; watching "" only works by accident of the inotify
+        // backend treating it as the working directory, so say "." plainly.
         let dir: PathBuf = path
             .parent()
+            .filter(|p| !p.as_os_str().is_empty())
             .map(Path::to_path_buf)
             .unwrap_or_else(|| PathBuf::from("."));
         let name = path
@@ -49,9 +53,11 @@ impl FileWatcher {
             })?;
         watcher.watch(&dir, RecursiveMode::NonRecursive)?;
 
-        // Runs on the main loop. Each event starts a fresh DEBOUNCE_MS wait;
-        // an event landing during the wait restarts it, so the callback fires
-        // only after the file has been quiet for the whole window.
+        // Runs on the main loop. After the first event, wait out
+        // DEBOUNCE_MS, then drain everything that piled up during the wait
+        // in one pass; only when a whole quiet window passes with nothing
+        // new does the callback fire. Draining in bulk keeps an event storm
+        // to one trailing window instead of one window per queued event.
         let receiver = glib::spawn_future_local(async move {
             loop {
                 if rx.recv().await.is_err() {
@@ -59,10 +65,15 @@ impl FileWatcher {
                 }
                 loop {
                     glib::timeout_future(DEBOUNCE_MS).await;
-                    match rx.try_recv() {
-                        Ok(()) => continue,
-                        Err(async_channel::TryRecvError::Empty) => break,
-                        Err(async_channel::TryRecvError::Closed) => return,
+                    if rx.is_closed() {
+                        return;
+                    }
+                    let mut more = false;
+                    while rx.try_recv().is_ok() {
+                        more = true;
+                    }
+                    if !more {
+                        break;
                     }
                 }
                 changed();
