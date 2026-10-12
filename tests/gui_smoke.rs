@@ -317,10 +317,12 @@ fn scroll_targets_move_viewport(mv: &std::rc::Rc<app::App>) {
     mv.open_path(&path);
     assert!(
         pump_until(Duration::from_secs(5), || mv.visible_page() == "doc"
-            && mv.toc_row_count() == 400),
-        "tall document never rendered: page={} toc={}",
+            && mv.toc_row_count() == 400
+            && mv.rendering_complete()),
+        "tall document never rendered: page={} toc={} complete={}",
         mv.visible_page(),
-        mv.toc_row_count()
+        mv.toc_row_count(),
+        mv.rendering_complete()
     );
     assert_eq!(
         mv.scroll_value(),
