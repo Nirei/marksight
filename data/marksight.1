@@ -3,7 +3,7 @@
 marksight \- minimal, theme-native markdown viewer
 .SH SYNOPSIS
 .B marksight
-.RI [ FILE ]
+.RI [ FILE ... ]
 .SH DESCRIPTION
 .B marksight
 renders a Markdown document with native GTK 4 widgets, following the desktop
@@ -13,6 +13,8 @@ dropped, never rendered.
 .PP
 The viewed file is watched for changes and re-rendered shortly after every
 save. A table-of-contents sidebar and find-in-document are built in.
+Each file given on the command line, including files opened while marksight
+is already running, opens in a window of its own.
 Links to web pages (http, https) and email addresses (mailto) open in the
 system's configured application; every other link scheme is ignored.
 In-document links jump to footnotes and to headings that carry an explicit

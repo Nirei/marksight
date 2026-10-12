@@ -11,4 +11,3 @@ Categories=Office;Viewer;
 MimeType=text/markdown;text/x-markdown;
 StartupNotify=true
 StartupWMClass=io.github-marksight-Marksight
-SingleMainWindow=true

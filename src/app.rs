@@ -1,19 +1,23 @@
 //! Application shell: window, header bar, TOC sidebar, search bar, states.
 //!
-//! Owns the [`Document`] and the [`RenderedDoc`]; parsing happens on a worker
-//! thread and is delivered back through the main context the moment it is
-//! ready, keeping the UI thread responsive for rebuilds of arbitrarily large
-//! files. marksight is a single-window application, so the [`App`] handle is
-//! kept in a thread-local registry shared by the activate and open signals.
+//! Owns the [`Document`] and the [`RenderedDoc`] per window; parsing happens
+//! on a worker thread and is delivered back through the main context the
+//! moment it is ready, keeping the UI thread responsive for rebuilds of
+//! arbitrarily large files. Every file handed to the application (command
+//! line, file manager, or a second running instance arriving over D-Bus)
+//! opens in a window of its own; live windows are tracked weakly in a
+//! thread-local registry, and worker results are routed back by window id.
 //!
-//! The window stays hidden until its first page is ready: an `open` launch
+//! A window stays hidden until its first page is ready: the `open` launch
 //! defers `present()` to the moment the document (or load error) is applied,
-//! so startup never paints an empty frame.
+//! so startup never paints an empty frame, and presenting the new window is
+//! what completes startup notification.
 
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
 use gtk::gdk;
@@ -103,12 +107,67 @@ impl State {
 }
 
 pub struct App {
+    id: u64,
     ui: Ui,
     state: RefCell<State>,
+    /// Set when the user closes this window. GTK keeps a closed window's
+    /// widget tree (and with it every closure capturing the App) alive for
+    /// the rest of the process, so Rc liveness cannot signal closure;
+    /// this flag does. A closed window stops watching, streaming, finding
+    /// and receiving loads, even though its memory stays parked until the
+    /// process exits.
+    closed: std::cell::Cell<bool>,
 }
 
 thread_local! {
-    static INSTANCE: RefCell<Option<Rc<App>>> = const { RefCell::new(None) };
+    /// Live windows, most recent last. Windows are removed when the user
+    /// closes them; the underlying widget tree stays parked in GTK until
+    /// process exit, but a closed window is no longer routed any work.
+    static WINDOWS: RefCell<Vec<Weak<App>>> = const { RefCell::new(Vec::new()) };
+}
+
+static NEXT_WINDOW_ID: AtomicU64 = AtomicU64::new(0);
+
+/// All windows whose widget tree is still alive; dead entries are pruned.
+fn alive_windows() -> Vec<Rc<App>> {
+    WINDOWS.with(|cell| {
+        let mut list = cell.borrow_mut();
+        list.retain(|weak| weak.strong_count() > 0);
+        list.iter().filter_map(Weak::upgrade).collect()
+    })
+}
+
+fn window_by_id(id: u64) -> Option<Rc<App>> {
+    alive_windows().into_iter().find(|app| app.id == id)
+}
+
+fn register_window(app: &Rc<App>) {
+    WINDOWS.with(|cell| cell.borrow_mut().push(Rc::downgrade(app)));
+}
+
+fn unregister_window(id: u64) {
+    WINDOWS.with(|cell| {
+        cell.borrow_mut()
+            .retain(|weak| weak.upgrade().is_none_or(|app| app.id != id))
+    });
+}
+
+/// Marks `app`'s window closed and makes it inert: the file watcher is
+/// dropped right away (a hidden window must not keep re-reading its file),
+/// pending loads are invalidated, and the window leaves the live registry
+/// so nothing routes work to it anymore.
+fn close_window(app: &Rc<App>) {
+    app.closed.set(true);
+    let mut state = app.state.borrow_mut();
+    state.path = None;
+    state.watcher = None;
+    drop(state);
+    unregister_window(app.id);
+}
+
+#[doc(hidden)]
+pub fn window_count() -> usize {
+    alive_windows().len()
 }
 
 pub fn run() -> glib::ExitCode {
@@ -118,50 +177,161 @@ pub fn run() -> glib::ExitCode {
         .build();
     timing::mark("app-object-built");
     app.connect_activate(|app| {
-        ensure_window(app).present_if_hidden();
+        timing::mark("activate-signal");
+        match alive_windows().last() {
+            Some(existing) => existing.ui.window.present(),
+            None => ensure_window(app).present_if_hidden(),
+        }
     });
     app.connect_open(|app, files, _| {
         timing::mark("open-signal");
-        let application = ensure_window(app);
-        for extra in files.iter().skip(1) {
-            eprintln!(
-                "marksight: ignoring extra file {} (one document per window)",
-                extra.path().unwrap_or_default().display()
-            );
+        if files.is_empty() {
+            match alive_windows().last() {
+                Some(existing) => existing.ui.window.present(),
+                None => ensure_window(app).present_if_hidden(),
+            }
+            return;
         }
-        match files.first().and_then(|f| f.path()) {
-            Some(path) => application.open_path(&path),
-            None => application.present_if_hidden(),
+        // One window per file. A second launch of marksight reaches this
+        // point in the primary process over D-Bus; opening a new window (and
+        // presenting it once loaded) is also what ends the launch feedback,
+        // so the file manager's busy cursor and placeholder taskbar icon go
+        // away the moment the document lands.
+        for file in files {
+            match file.path() {
+                Some(path) => {
+                    open_window(app, &path);
+                }
+                None => eprintln!("marksight: cannot open a file without a local path"),
+            }
         }
     });
     app.connect_startup(|_| timing::mark("startup-signal"));
     app.run()
 }
 
-pub fn ensure_window(app: &gtk::Application) -> Rc<App> {
-    let existing = INSTANCE.with(|cell| cell.borrow().clone());
-    if let Some(application) = existing {
-        return application;
+/// Entry point of the throwaway forwarding process started by `main` with
+/// `--__forward-probe`. Returns true when a running instance was found and
+/// the files were handed over; false means "no primary yet, become one".
+/// The forwarding must happen in a child process: creating the session-bus
+/// connection before GtkApplication initializes leaves GApplication's own
+/// registration waiting forever, so the would-be primary must stay clean.
+pub fn forward_files(files: &[std::ffi::OsString]) -> bool {
+    let files: Vec<PathBuf> = files.iter().map(PathBuf::from).collect();
+    forward_to_running_instance(&files)
+}
+
+const APP_OBJECT_PATH: &str = "/io/github/marksight/Marksight";
+
+/// Forwards `files` to an already-running instance and reports whether one
+/// was found. Deliberately low-level: a forwarding process must not run
+/// GtkApplication's remote machinery, which initializes GTK (pulling in the
+/// accessibility bridge) and then waits for the primary to answer a
+/// DescribeAll handshake, so a primary stuck behind a stalled portal or
+/// slow a11y activation keeps the forwarding process, and with it the file
+/// manager's busy cursor and placeholder taskbar icon, alive for tens of
+/// seconds.
+///
+/// Name ownership is answered by the dbus-daemon itself, in microseconds,
+/// whatever the owning application is doing; the Open call carries the
+/// launch's startup id so the primary can finish the desktop's startup
+/// feedback when it presents the new window, and it is sent with a short
+/// timeout: delivery does not depend on the caller waiting for the reply,
+/// so a busy primary delays this process by at most a quarter second.
+fn forward_to_running_instance(files: &[PathBuf]) -> bool {
+    let Ok(bus) =
+        gtk::gio::bus_get_sync(gtk::gio::BusType::Session, None::<&gtk::gio::Cancellable>)
+    else {
+        return false; // no session bus: a standalone primary is fine
+    };
+    // D-Bus method bodies are always tuples: a lone string is ("s",).
+    let name = gtk::glib::Variant::tuple_from_iter([APP_ID.to_variant()]);
+    let owner = bus.call_sync(
+        Some("org.freedesktop.DBus"),
+        "/org/freedesktop/DBus",
+        "org.freedesktop.DBus",
+        "GetNameOwner",
+        Some(&name),
+        None,
+        gtk::gio::DBusCallFlags::NONE,
+        2000,
+        None::<&gtk::gio::Cancellable>,
+    );
+    // An error here is the normal "no primary yet" answer (NameHasNoOwner),
+    // and covers bus hiccups too: falling back to a standalone launch is
+    // always a safe next move.
+    if owner.is_err() {
+        return false;
     }
-    let application = build(app);
-    INSTANCE.with(|cell| *cell.borrow_mut() = Some(application.clone()));
+
+    let platform = gtk::glib::VariantDict::new(None);
+    if let Some(startup_id) = std::env::var_os("DESKTOP_STARTUP_ID") {
+        platform.insert_value(
+            "desktop-startup-id",
+            &startup_id.to_string_lossy().into_owned().to_variant(),
+        );
+    }
+    let (method, body) = if files.is_empty() {
+        // Activate takes a single a{sv} argument, wrapped in a tuple.
+        (
+            "Activate",
+            gtk::glib::Variant::tuple_from_iter([platform.end()]),
+        )
+    } else {
+        let uris: Vec<gtk::glib::Variant> = files
+            .iter()
+            .map(|path| {
+                // "av" children are boxed variants: each uri becomes ("s") wrapped in v.
+                gtk::glib::Variant::from_variant(
+                    &gtk::gio::File::for_path(path)
+                        .uri()
+                        .to_string()
+                        .to_variant(),
+                )
+            })
+            .collect();
+        let uris = gtk::glib::Variant::array_from_iter::<gtk::glib::Variant>(uris);
+        (
+            "Open",
+            gtk::glib::Variant::tuple_from_iter([platform.end(), uris, String::new().to_variant()]),
+        )
+    };
+    let _ = bus.call_sync(
+        Some(APP_ID),
+        APP_OBJECT_PATH,
+        "org.gtk.Application",
+        method,
+        Some(&body),
+        None,
+        gtk::gio::DBusCallFlags::NONE,
+        250,
+        None::<&gtk::gio::Cancellable>,
+    );
+    let _ = bus.flush_sync(None::<&gtk::gio::Cancellable>);
+    true
+}
+
+/// Returns the most recently created live window, building a fresh welcome
+/// window when none exists. Used by `activate` and by the smoke tests, which
+/// drive a single window directly.
+pub fn ensure_window(app: &gtk::Application) -> Rc<App> {
+    if let Some(existing) = alive_windows().last() {
+        return existing.clone();
+    }
+    let window = build(app);
+    register_window(&window);
     timing::mark("window-built");
+    window
+}
 
-    let find_app = application.clone();
-    glib::timeout_add_local(FIND_POLL, move || {
-        let pending = find_app.state.borrow_mut().find_pending.take();
-        if let Some(at) = pending {
-            if at.elapsed() < FIND_DEBOUNCE {
-                find_app.state.borrow_mut().find_pending = Some(at);
-            } else {
-                let needle = find_app.ui.search_entry.text().to_string();
-                run_find(&find_app, &needle);
-            }
-        }
-        glib::ControlFlow::Continue
-    });
-
-    application
+/// Opens `path` in a new window and returns its handle. The window stays
+/// hidden until its first page (or load error) is ready; presenting it then
+/// completes startup notification for whoever launched the file.
+pub fn open_window(app: &gtk::Application, path: &Path) -> Rc<App> {
+    let window = build(app);
+    register_window(&window);
+    window.open_path(path);
+    window
 }
 
 fn build(app: &gtk::Application) -> Rc<App> {
@@ -186,8 +356,8 @@ fn build(app: &gtk::Application) -> Rc<App> {
 
     let menu = gtk::gio::Menu::new();
     let section = gtk::gio::Menu::new();
-    section.append(Some("About marksight"), Some("app.about"));
-    section.append(Some("Quit"), Some("app.quit"));
+    section.append(Some("About marksight"), Some("win.about"));
+    section.append(Some("Quit"), Some("win.quit"));
     menu.append_section(None, &section);
     let menu_button = gtk::MenuButton::builder()
         .icon_name("open-menu-symbolic")
@@ -297,43 +467,89 @@ fn build(app: &gtk::Application) -> Rc<App> {
         path_label,
     };
 
+    let id = NEXT_WINDOW_ID.fetch_add(1, Ordering::Relaxed);
     let application = App {
+        id,
         ui,
         state: RefCell::new(State::new()),
+        closed: std::cell::Cell::new(false),
     };
     let shared = Rc::new(application);
     wire(&shared, app, &open_button);
+
+    // Window lifetime: Rc drops never happen for closed windows (GTK keeps
+    // the widget tree, and every signal closure holds the App), so closure
+    // is tracked explicitly and everything the window keeps doing is
+    // stopped here.
+    {
+        let closing = Rc::downgrade(&shared);
+        shared.ui.window.connect_close_request(move |_| {
+            if let Some(app) = closing.upgrade() {
+                close_window(&app);
+            }
+            glib::Propagation::Proceed
+        });
+    }
+
+    // Per-window find poll. Held weakly: a closed window stops paying for
+    // its own timer instead of keeping the App alive forever.
+    let find_weak = Rc::downgrade(&shared);
+    glib::timeout_add_local(FIND_POLL, move || {
+        let Some(find_app) = find_weak.upgrade() else {
+            return glib::ControlFlow::Break;
+        };
+        if find_app.closed.get() {
+            return glib::ControlFlow::Break;
+        }
+        let pending = find_app.state.borrow_mut().find_pending.take();
+        if let Some(at) = pending {
+            if at.elapsed() < FIND_DEBOUNCE {
+                find_app.state.borrow_mut().find_pending = Some(at);
+            } else {
+                let needle = find_app.ui.search_entry.text().to_string();
+                run_find(&find_app, &needle);
+            }
+        }
+        glib::ControlFlow::Continue
+    });
+
     shared
 }
 
 fn load_css() {
-    let provider = gtk::CssProvider::new();
-    provider.load_from_data(CSS);
-    if let Some(display) = gdk::Display::default() {
-        gtk::style_context_add_provider_for_display(
-            &display,
-            &provider,
-            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
-        );
-    }
+    static LOADED: std::sync::Once = std::sync::Once::new();
+    LOADED.call_once(|| {
+        let provider = gtk::CssProvider::new();
+        provider.load_from_data(CSS);
+        if let Some(display) = gdk::Display::default() {
+            gtk::style_context_add_provider_for_display(
+                &display,
+                &provider,
+                gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+            );
+        }
+    });
 }
 
-fn wire(app: &Rc<App>, gtk_app: &gtk::Application, open_button: &gtk::Button) {
+fn wire(app: &Rc<App>, _gtk_app: &gtk::Application, open_button: &gtk::Button) {
     let window = app.ui.window.clone();
 
+    // Both actions live on the window, not the application: their closures
+    // capture the window, and an app-level action added per window would
+    // pin every closed window (and its App) for the application's lifetime.
     let about = gtk::gio::SimpleAction::new("about", None);
     about.connect_activate({
         let window = window.clone();
         move |_, _| show_about(&window)
     });
-    gtk_app.add_action(&about);
+    window.add_action(&about);
 
     let quit = gtk::gio::SimpleAction::new("quit", None);
     quit.connect_activate({
-        let gtk_app = gtk_app.clone();
-        move |_, _| gtk_app.quit()
+        let window = window.clone();
+        move |_, _| window.close()
     });
-    gtk_app.add_action(&quit);
+    window.add_action(&quit);
 
     let controller = gtk::ShortcutController::new();
     controller.set_scope(gtk::ShortcutScope::Managed);
@@ -644,6 +860,9 @@ impl App {
     }
 
     pub fn reload_path(self: &Rc<Self>, path: &Path) {
+        if self.closed.get() {
+            return;
+        }
         if self.state.borrow().path.as_deref() == Some(path) {
             self.open_path(path);
         }
@@ -659,6 +878,7 @@ impl App {
             state.find_pending = None;
         }
         self.start_watcher(path);
+        let id = self.id;
         let path = path.to_path_buf();
         std::thread::spawn(move || {
             let msg = match std::fs::read(&path) {
@@ -677,16 +897,16 @@ impl App {
                 },
             };
             // Deliver straight onto the main context: the callback runs on
-            // the main loop's next pass, with no timer in between.
+            // the main loop's next pass, with no timer in between. Routed by
+            // window id, so the load lands in the window that started it and
+            // a window closed mid-load simply drops it.
             glib::MainContext::default().invoke(move || {
-                INSTANCE.with(|cell| {
-                    if let Some(app) = cell.borrow().clone() {
-                        match msg {
-                            LoadMsg::Loaded { path, doc } => apply_doc(&app, &path, doc),
-                            LoadMsg::Failed { path, message } => show_error(&app, &path, &message),
-                        }
+                if let Some(app) = window_by_id(id) {
+                    match msg {
+                        LoadMsg::Loaded { path, doc } => apply_doc(&app, &path, doc),
+                        LoadMsg::Failed { path, message } => show_error(&app, &path, &message),
                     }
-                });
+                }
             });
         });
     }
@@ -793,9 +1013,15 @@ fn apply_doc(app: &Rc<App>, path: &Path, parsed: Document) {
     app.present_if_hidden();
     timing::mark("present-called");
 
-    let stream_app = app.clone();
+    let stream_weak = Rc::downgrade(app);
     let stream_path = path.to_path_buf();
     glib::timeout_add_local(STREAM_INTERVAL, move || {
+        let Some(stream_app) = stream_weak.upgrade() else {
+            return glib::ControlFlow::Break;
+        };
+        if stream_app.closed.get() {
+            return glib::ControlFlow::Break;
+        }
         {
             let state = stream_app.state.borrow();
             let superseded = state.path.as_deref() != Some(&stream_path)
@@ -832,10 +1058,15 @@ fn apply_doc(app: &Rc<App>, path: &Path, parsed: Document) {
 
 impl App {
     fn start_watcher(self: &Rc<Self>, path: &Path) {
-        let app_for_reload = self.clone();
+        // Weak: a closed window must not keep reloading a document nobody is
+        // looking at, and App -> watcher -> callback -> App would otherwise
+        // be a reference cycle that outlives the window.
+        let app_for_reload = Rc::downgrade(self);
         let watched = path.to_path_buf();
         let watcher = FileWatcher::new(path, move || {
-            app_for_reload.reload_path(&watched);
+            if let Some(app) = app_for_reload.upgrade() {
+                app.reload_path(&watched);
+            }
         });
         match watcher {
             Ok(watcher) => self.state.borrow_mut().watcher = Some(watcher),

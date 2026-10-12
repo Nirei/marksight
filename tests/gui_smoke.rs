@@ -64,6 +64,7 @@ fn gui_smoke_suite() {
     live_reload_replaces_content(&mv);
     huge_document_within_budget(&mv);
     error_state_on_missing_file(&mv);
+    second_file_opens_its_own_window(&mv, &gtk_app);
 }
 
 fn welcome_page_visible(mv: &std::rc::Rc<app::App>) {
@@ -387,4 +388,50 @@ fn error_state_on_missing_file(mv: &std::rc::Rc<app::App>) {
         "missing file should land on the error page, got {:?}",
         mv.visible_page()
     );
+}
+
+fn second_file_opens_its_own_window(mv: &std::rc::Rc<app::App>, gtk_app: &gtk::Application) {
+    // Regression: a second file used to replace the document of the
+    // existing window, and because no new window was ever presented the
+    // desktop's startup feedback (busy cursor, placeholder taskbar icon)
+    // never completed.
+    mv.open_path(&fixture("kitchen-sink.md"));
+    assert!(
+        pump_until(Duration::from_secs(5), || mv.visible_page() == "doc"
+            && mv.rendering_complete()),
+        "first window never finished rendering"
+    );
+    let first_len = mv.current_doc_len();
+
+    let second = app::open_window(gtk_app, &fixture("code.md"));
+    assert!(
+        pump_until(Duration::from_secs(5), || second.visible_page() == "doc"
+            && second.rendering_complete()),
+        "second window never finished rendering"
+    );
+    assert_eq!(app::window_count(), 2, "each file must own a window");
+    assert_eq!(
+        mv.current_doc_len(),
+        first_len,
+        "opening a second file must not touch the first window's document"
+    );
+    assert!(second.current_doc_len() > 0);
+
+    // Closing the extra window drops its App; the first window lives on.
+    // The root() handle is a strong reference, so it is scoped to the close
+    // call and released before the assertion polls for teardown.
+    {
+        let window = second
+            .doc_scrolled()
+            .root()
+            .and_downcast::<gtk::ApplicationWindow>()
+            .expect("second window has an application window root");
+        window.close();
+    }
+    drop(second);
+    assert!(
+        pump_until(Duration::from_secs(5), || app::window_count() == 1),
+        "closing a window must drop its App"
+    );
+    assert_eq!(mv.current_doc_len(), first_len);
 }
