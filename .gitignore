@@ -4,3 +4,4 @@
 /fuzz/artifacts
 *.snap.new
 /packaging/deb/*.deb
+.pi/
