@@ -44,8 +44,17 @@ fn main() -> ExitCode {
     // Hand the files to a running instance, if any, through a child process
     // and quit: the child talks to the session bus and exits in milliseconds,
     // so this process never initializes GTK or waits for the primary.
+    // GTK's constructor strips DESKTOP_STARTUP_ID from the environment
+    // before main runs, so the launch's startup id is recovered from the
+    // exec-time environment and handed to the child explicitly; without it
+    // the running instance could never end the desktop's launch feedback.
     if let Ok(exe) = std::env::current_exe() {
-        if let Ok(status) = Command::new(exe).arg(FORWARD_PROBE).args(&files).status() {
+        let mut forward = Command::new(exe);
+        forward.arg(FORWARD_PROBE).args(&files);
+        if let Some(id) = marksight::app::launch_startup_id() {
+            forward.env("DESKTOP_STARTUP_ID", id);
+        }
+        if let Ok(status) = forward.status() {
             if status.code() == Some(0) {
                 return ExitCode::SUCCESS;
             }

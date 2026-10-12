@@ -57,7 +57,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libgtk-4-dev pkg-config
-      - run: cargo test --lib --test snapshots --test property --test cli
+      - run: cargo test --lib --test snapshots --test property --test cli --test forwarding
 
   gui:
     name: gui smoke (Xvfb)

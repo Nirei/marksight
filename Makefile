@@ -9,7 +9,7 @@ all:
 	cargo build --release
 
 check:
-	cargo test --lib --test snapshots --test property --test cli
+	cargo test --lib --test snapshots --test property --test cli --test forwarding
 	cargo clippy --all-targets -- -D warnings
 
 install:

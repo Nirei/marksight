@@ -287,17 +287,23 @@ fn forward_to_running_instance(files: &[PathBuf]) -> bool {
         return false;
     }
 
-    let startup_id = std::env::var_os("DESKTOP_STARTUP_ID")
-        .map(|id| id.to_string_lossy().into_owned())
-        .unwrap_or_default();
+    let startup_id = launch_startup_id().unwrap_or_default();
     let platform = gtk::glib::VariantDict::new(None);
     if !startup_id.is_empty() {
+        // Both names carry the id, mirroring what GtkApplication itself
+        // sends: the X11 and Wayland backends read different keys.
         platform.insert_value("desktop-startup-id", &startup_id.to_variant());
+        platform.insert_value("activation-token", &startup_id.to_variant());
     }
     let (method, body) = forward_body(files, &startup_id, &platform);
     // A failed delivery must not be swallowed: report it and report "not
     // forwarded", so the caller falls back to opening the file in a
     // primary of its own instead of quietly doing nothing.
+    // Two seconds, not a quarter: a reply that never comes means the only
+    // other delivery path (a fresh GtkApplication handing the file over)
+    // loses the startup id, so waiting longer than one main-loop hiccup of
+    // the primary is what keeps the launch feedback short in the worst case;
+    // a healthy primary still answers in milliseconds.
     match bus.call_sync(
         Some(APP_ID),
         APP_OBJECT_PATH,
@@ -306,7 +312,7 @@ fn forward_to_running_instance(files: &[PathBuf]) -> bool {
         Some(&body),
         None,
         gtk::gio::DBusCallFlags::NONE,
-        250,
+        2000,
         None::<&gtk::gio::Cancellable>,
     ) {
         Ok(_) => true,
@@ -315,6 +321,44 @@ fn forward_to_running_instance(files: &[PathBuf]) -> bool {
             false
         }
     }
+}
+
+/// The startup-notification id of the launch that started this process.
+///
+/// A launch from the desktop sets `DESKTOP_STARTUP_ID` in the environment,
+/// but GTK's library constructor moves that variable (and
+/// `XDG_ACTIVATION_TOKEN`) into private storage and removes it from the
+/// environment before `main` runs, so the live variable is empty by the
+/// time any code here looks. The kernel keeps the exec-time environment
+/// for `/proc/self/environ`, which no library constructor can touch, so the
+/// id is recovered from there when the live variable is gone. Without this
+/// recovery a forwarded launch can never name its startup sequence, and the
+/// desktop shows launch feedback until its own timeout: a busy cursor and a
+/// ghost taskbar entry for seconds after the file is already on screen.
+///
+/// Returns nothing on systems without `/proc` (there the plain environment
+/// is the only source) and for launches that carried no id, such as one
+/// from a terminal.
+pub fn launch_startup_id() -> Option<String> {
+    if let Some(id) = std::env::var_os("DESKTOP_STARTUP_ID") {
+        let id = id.to_string_lossy().into_owned();
+        return (!id.is_empty()).then_some(id);
+    }
+    let environ = std::fs::read("/proc/self/environ").ok()?;
+    let id = startup_id_in_environ("DESKTOP_STARTUP_ID", &environ)
+        .or_else(|| startup_id_in_environ("XDG_ACTIVATION_TOKEN", &environ))?;
+    (!id.is_empty()).then_some(id)
+}
+
+/// Reads `name` out of a NUL-separated `KEY=VALUE` block such as
+/// `/proc/self/environ`. An empty value counts as absent.
+fn startup_id_in_environ(name: &str, environ: &[u8]) -> Option<String> {
+    let prefix = format!("{name}=");
+    let value = environ
+        .split(|byte| *byte == 0)
+        .find_map(|entry| entry.strip_prefix(prefix.as_bytes()))?;
+    let text = String::from_utf8_lossy(value).into_owned();
+    (!text.is_empty()).then_some(text)
 }
 
 /// Builds the method call that activates a running instance. The signatures
@@ -1420,9 +1464,51 @@ mod tests {
 
 #[cfg(test)]
 mod forward_tests {
-    use super::forward_body;
+    use super::{forward_body, startup_id_in_environ};
     use gtk::glib::VariantDict;
     use std::path::PathBuf;
+
+    #[test]
+    fn exec_environ_lookup_finds_the_startup_id() {
+        let environ = b"PATH=/usr/bin\0DESKTOP_STARTUP_ID=nemo-42-time7\0TERM=xterm\0";
+        assert_eq!(
+            startup_id_in_environ("DESKTOP_STARTUP_ID", environ).as_deref(),
+            Some("nemo-42-time7")
+        );
+    }
+
+    #[test]
+    fn exec_environ_lookup_matches_whole_keys_only() {
+        // A key that merely ends in the name must not match.
+        let environ = b"XDESKTOP_STARTUP_ID=wrong\0DESKTOP_STARTUP_ID=right\0";
+        assert_eq!(
+            startup_id_in_environ("DESKTOP_STARTUP_ID", environ).as_deref(),
+            Some("right")
+        );
+    }
+
+    #[test]
+    fn exec_environ_lookup_keeps_values_with_equals() {
+        let environ = b"DESKTOP_STARTUP_ID=id=with=signs\0";
+        assert_eq!(
+            startup_id_in_environ("DESKTOP_STARTUP_ID", environ).as_deref(),
+            Some("id=with=signs")
+        );
+    }
+
+    #[test]
+    fn exec_environ_lookup_reports_absent_and_empty() {
+        assert_eq!(
+            startup_id_in_environ("DESKTOP_STARTUP_ID", b"PATH=/bin\0"),
+            None
+        );
+        assert_eq!(startup_id_in_environ("DESKTOP_STARTUP_ID", b""), None);
+        // An empty value is not an id: treat it like an absent one.
+        assert_eq!(
+            startup_id_in_environ("DESKTOP_STARTUP_ID", b"DESKTOP_STARTUP_ID=\0"),
+            None
+        );
+    }
 
     #[test]
     fn open_body_matches_gapplication_signature() {
