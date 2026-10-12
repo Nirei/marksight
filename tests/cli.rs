@@ -1,4 +1,9 @@
 //! CLI surface tests: run the real binary as a subprocess.
+//! Gated like the GUI smoke suite: the binary requires the ui feature, so
+//! without it there is nothing to spawn (cargo still points
+//! CARGO_BIN_EXE_marksight at a path that was never built).
+
+#![cfg(feature = "ui")]
 
 use std::process::Command;
 
