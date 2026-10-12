@@ -271,32 +271,11 @@ fn forward_to_running_instance(files: &[PathBuf]) -> bool {
             &startup_id.to_string_lossy().into_owned().to_variant(),
         );
     }
-    let (method, body) = if files.is_empty() {
-        // Activate takes a single a{sv} argument, wrapped in a tuple.
-        (
-            "Activate",
-            gtk::glib::Variant::tuple_from_iter([platform.end()]),
-        )
-    } else {
-        let uris: Vec<gtk::glib::Variant> = files
-            .iter()
-            .map(|path| {
-                // "av" children are boxed variants: each uri becomes ("s") wrapped in v.
-                gtk::glib::Variant::from_variant(
-                    &gtk::gio::File::for_path(path)
-                        .uri()
-                        .to_string()
-                        .to_variant(),
-                )
-            })
-            .collect();
-        let uris = gtk::glib::Variant::array_from_iter::<gtk::glib::Variant>(uris);
-        (
-            "Open",
-            gtk::glib::Variant::tuple_from_iter([platform.end(), uris, String::new().to_variant()]),
-        )
-    };
-    let _ = bus.call_sync(
+    let (method, body) = forward_body(files, &platform);
+    // A failed delivery must not be swallowed: report it and report "not
+    // forwarded", so the caller falls back to opening the file in a
+    // primary of its own instead of quietly doing nothing.
+    match bus.call_sync(
         Some(APP_ID),
         APP_OBJECT_PATH,
         "org.gtk.Application",
@@ -306,9 +285,43 @@ fn forward_to_running_instance(files: &[PathBuf]) -> bool {
         gtk::gio::DBusCallFlags::NONE,
         250,
         None::<&gtk::gio::Cancellable>,
-    );
-    let _ = bus.flush_sync(None::<&gtk::gio::Cancellable>);
-    true
+    ) {
+        Ok(_) => true,
+        Err(err) => {
+            eprintln!("marksight: could not hand the file to the running instance: {err}");
+            false
+        }
+    }
+}
+
+/// Builds the method call that activates a running instance. The signatures
+/// are fixed by GApplication's D-Bus API and pinned by a unit test:
+/// `org.gtk.Application.Open(as uris, s hint, a{sv} platform-data)` and
+/// `Activate(a{sv} platform-data)`. A mismatch is silently rejected by the
+/// D-Bus layer, so getting these wrong means files that never open.
+fn forward_body(
+    files: &[PathBuf],
+    platform: &gtk::glib::VariantDict,
+) -> (&'static str, gtk::glib::Variant) {
+    if files.is_empty() {
+        (
+            "Activate",
+            gtk::glib::Variant::tuple_from_iter([platform.end()]),
+        )
+    } else {
+        let uris: Vec<String> = files
+            .iter()
+            .map(|path| gtk::gio::File::for_path(path).uri().to_string())
+            .collect();
+        (
+            "Open",
+            gtk::glib::Variant::tuple_from_iter([
+                uris.to_variant(),
+                String::new().to_variant(),
+                platform.end(),
+            ]),
+        )
+    }
 }
 
 /// Returns the most recently created live window, building a fresh welcome
@@ -1313,5 +1326,32 @@ mod tests {
         assert!(!is_launchable_uri("example.com/relative"));
         assert!(!is_launchable_uri(""));
         assert!(!is_launchable_uri("#fragment"));
+    }
+}
+
+#[cfg(test)]
+mod forward_tests {
+    use super::forward_body;
+    use gtk::glib::VariantDict;
+    use std::path::PathBuf;
+
+    #[test]
+    fn open_body_matches_gapplication_signature() {
+        // org.gtk.Application.Open(as uris, s hint, a{sv} platform-data).
+        // D-Bus rejects a mismatched body without ever reaching the
+        // application, so this exact type string is a contract.
+        let platform = VariantDict::new(None);
+        let (method, body) = forward_body(&[PathBuf::from("/tmp/x.md")], &platform);
+        assert_eq!(method, "Open");
+        assert_eq!(body.type_().to_string(), "(assa{sv})");
+    }
+
+    #[test]
+    fn activate_body_matches_gapplication_signature() {
+        // org.gtk.Application.Activate(a{sv} platform-data).
+        let platform = VariantDict::new(None);
+        let (method, body) = forward_body(&[], &platform);
+        assert_eq!(method, "Activate");
+        assert_eq!(body.type_().to_string(), "(a{sv})");
     }
 }
