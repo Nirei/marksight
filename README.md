@@ -4,12 +4,12 @@
 
 A minimal, theme-native markdown viewer.
 
-Renders Markdown with **native GTK 4 widgets** — no browser engine, no
-JavaScript, no HTML. Because rendering is plain widgets, marksight follows your
-desktop theme automatically: light or dark, Mint-Y or Adwaita, with zero
+Renders Markdown with **native GTK 4 widgets**; nothing else stands
+between the document and the toolkit, so marksight follows your desktop
+theme automatically: light or dark, Mint-Y or Adwaita, with zero
 configuration.
 
-![A screenshot showing the program in execution](docs/screenshot.png)
+![A screenshot of marksight running](docs/screenshot.png)
 
 ## Features
 
@@ -26,7 +26,7 @@ configuration.
 - **Small and safe**: no network, no JavaScript, no HTML rendering, no
   `unsafe`
 
-Raw HTML in documents is **dropped, never rendered** — the classic viewer XSS
+Raw HTML in documents is **dropped, never rendered**. The classic viewer XSS
 vector does not exist here.
 
 ## Keyboard shortcuts
@@ -70,7 +70,7 @@ sudo apt install ./packaging/deb/marksight_*.deb
 
 `make deb` uses cargo-deb when installed and falls back to the
 dpkg-buildpackage flow in `packaging/deb/` (kept for the distro
-packaging path — see `packaging/deb/build-local.sh`).
+packaging path; see `packaging/deb/build-local.sh`).
 
 ### Distro packages
 
@@ -185,7 +185,7 @@ GUI smoke enforces the parse/index budgets and CI checks the binary size.
   and man page
 - Flatpak: no `--filesystem` permissions; file access goes through the
   document portal only. CLI-passed paths inside the sandbox refer to portal
-  paths — the primary UX is the file dialog and file-manager activation
+  paths; the primary UX is the file dialog and file-manager activation
 - GFM alert styling uses theme named colors (`@theme_selected_bg_color`,
   `@success_color`, `@warning_color`, `@error_color`); themes without them
   degrade gracefully
