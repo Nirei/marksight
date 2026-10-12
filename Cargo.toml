@@ -5,8 +5,8 @@ edition = "2024"
 rust-version = "1.85"
 description = "A minimal, theme-native markdown viewer"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/marksight/marksight"
-homepage = "https://github.com/marksight/marksight"
+repository = "https://github.com/cinzatech/marksight"
+homepage = "https://github.com/cinzatech/marksight"
 keywords = ["markdown", "viewer", "gtk", "commonmark", "gfm"]
 categories = ["gui", "text-processing"]
 readme = "README.md"
@@ -45,9 +45,9 @@ depends = "libgtk-4-1 (>= 4.10)"
 section = "utils"
 assets = [
   ["target/release/marksight", "usr/bin/", "755"],
-  ["data/io.github.marksight.Marksight.desktop", "usr/share/applications/", "644"],
-  ["data/io.github.marksight.Marksight.metainfo.xml", "usr/share/metainfo/", "644"],
-  ["data/icons/hicolor/scalable/apps/io.github.marksight.Marksight.svg", "usr/share/icons/hicolor/scalable/apps/", "644"],
+  ["data/io.github.cinzatech.marksight.desktop", "usr/share/applications/", "644"],
+  ["data/io.github.cinzatech.marksight.metainfo.xml", "usr/share/metainfo/", "644"],
+  ["data/icons/hicolor/scalable/apps/io.github.cinzatech.marksight.svg", "usr/share/icons/hicolor/scalable/apps/", "644"],
   ["data/marksight.1", "usr/share/man/man1/", "644"],
 ]
 

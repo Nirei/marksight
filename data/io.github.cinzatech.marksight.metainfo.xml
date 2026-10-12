@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>io.github.marksight.Marksight</id>
+  <id>io.github.cinzatech.marksight</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>MIT OR Apache-2.0</project_license>
   <name>marksight</name>
@@ -20,12 +20,12 @@
       network access — untrusted files never reach an interpreter.
     </p>
   </description>
-  <launchable type="desktop-id">io.github.marksight.Marksight.desktop</launchable>
+  <launchable type="desktop-id">io.github.cinzatech.marksight.desktop</launchable>
   <provides>
     <binary>marksight</binary>
   </provides>
-  <url type="homepage">https://github.com/marksight/marksight</url>
-  <url type="bugtracker">https://github.com/marksight/marksight/issues</url>
+  <url type="homepage">https://github.com/cinzatech/marksight</url>
+  <url type="bugtracker">https://github.com/cinzatech/marksight/issues</url>
   <content_rating type="oars-1.1" />
   <requires>
     <display_length compare="ge">360</display_length>

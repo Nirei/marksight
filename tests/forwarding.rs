@@ -19,8 +19,8 @@ use gtk::gio;
 use gtk::glib;
 use gtk::prelude::*;
 
-const APP_ID: &str = "io.github.marksight.Marksight";
-const OBJECT_PATH: &str = "/io/github/marksight/Marksight";
+const APP_ID: &str = "io.github.cinzatech.marksight";
+const OBJECT_PATH: &str = "/io/github/cinzatech/marksight";
 
 const NODE_XML: &str = "
 <node>

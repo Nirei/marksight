@@ -1,6 +1,6 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: marksight
-Source: https://github.com/marksight/marksight
+Source: https://github.com/cinzatech/marksight
 
 Files: *
 Copyright: 2026 The marksight contributors

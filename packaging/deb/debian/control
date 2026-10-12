@@ -10,9 +10,9 @@ Build-Depends:
  debhelper-compat (= 13),
  libgtk-4-dev (>= 4.10),
 Standards-Version: 4.7.0
-Vcs-Git: https://github.com/marksight/marksight.git
-Vcs-Browser: https://github.com/marksight/marksight
-Homepage: https://github.com/marksight/marksight
+Vcs-Git: https://github.com/cinzatech/marksight.git
+Vcs-Browser: https://github.com/cinzatech/marksight
+Homepage: https://github.com/cinzatech/marksight
 
 Package: marksight
 Architecture: any

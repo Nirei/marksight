@@ -1,10 +1,10 @@
-# Maintainer: marksight contributors <marksight@noreply.github.com>
+# Maintainer: marksight contributors <cinzatech@noreply.github.com>
 pkgname=marksight
 pkgver=0.1.0
 pkgrel=1
 pkgdesc='Minimal, theme-native markdown viewer'
 arch=('x86_64')
-url='https://github.com/marksight/marksight'
+url='https://github.com/cinzatech/marksight'
 license=('MIT' 'Apache-2.0')
 depends=('gtk4' 'gcc-libs')
 makedepends=('cargo')
@@ -35,12 +35,12 @@ check() {
 package() {
   cd "${pkgname}-${pkgver}"
   install -Dm755 "target/release/${pkgname}" "${pkgdir}/usr/bin/${pkgname}"
-  install -Dm644 data/io.github.marksight.Marksight.desktop \
-    "${pkgdir}/usr/share/applications/io.github.marksight.Marksight.desktop"
-  install -Dm644 data/io.github.marksight.Marksight.metainfo.xml \
-    "${pkgdir}/usr/share/metainfo/io.github.marksight.Marksight.metainfo.xml"
-  install -Dm644 data/icons/hicolor/scalable/apps/io.github.marksight.Marksight.svg \
-    "${pkgdir}/usr/share/icons/hicolor/scalable/apps/io.github.marksight.Marksight.svg"
+  install -Dm644 data/io.github.cinzatech.marksight.desktop \
+    "${pkgdir}/usr/share/applications/io.github.cinzatech.marksight.desktop"
+  install -Dm644 data/io.github.cinzatech.marksight.metainfo.xml \
+    "${pkgdir}/usr/share/metainfo/io.github.cinzatech.marksight.metainfo.xml"
+  install -Dm644 data/icons/hicolor/scalable/apps/io.github.cinzatech.marksight.svg \
+    "${pkgdir}/usr/share/icons/hicolor/scalable/apps/io.github.cinzatech.marksight.svg"
   install -Dm644 data/marksight.1 "${pkgdir}/usr/share/man/man1/marksight.1"
   install -Dm644 LICENSE-MIT "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE-MIT"
   install -Dm644 LICENSE-APACHE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE-APACHE"

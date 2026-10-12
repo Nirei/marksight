@@ -32,7 +32,7 @@ use crate::render::{self, RenderedDoc};
 use crate::timing;
 use crate::watch::FileWatcher;
 
-pub const APP_ID: &str = "io.github.marksight.Marksight";
+pub const APP_ID: &str = "io.github.cinzatech.marksight";
 
 const CSS: &str = include_str!("../resources/marksight.css");
 const LOGO_SVG: &str = include_str!("../data/logo/marksight-logo.svg");
@@ -248,7 +248,7 @@ pub fn forward_files(files: &[std::ffi::OsString]) -> bool {
     forward_to_running_instance(&files)
 }
 
-const APP_OBJECT_PATH: &str = "/io/github/marksight/Marksight";
+const APP_OBJECT_PATH: &str = "/io/github/cinzatech/marksight";
 
 /// Forwards `files` to an already-running instance and reports whether one
 /// was found. Deliberately low-level: a forwarding process must not run
@@ -806,7 +806,7 @@ fn show_about(window: &gtk::ApplicationWindow) {
         Ok(texture) => about.set_logo(Some(&texture)),
         Err(_) => about.set_logo_icon_name(Some(APP_ID)),
     }
-    about.set_website(Some("https://github.com/marksight/marksight"));
+    about.set_website(Some("https://github.com/cinzatech/marksight"));
     about.present();
 }
 

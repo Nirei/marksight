@@ -12,7 +12,7 @@
 # File access is exclusively through the portal (GtkFileDialog +
 # document portal); note the absence of --filesystem.
 
-app-id: io.github.marksight.Marksight
+app-id: io.github.cinzatech.marksight
 runtime: org.gnome.Platform
 runtime-version: "48"
 sdk: org.gnome.Sdk
@@ -33,17 +33,17 @@ modules:
     build-commands:
       - cargo --offline build --release
       - install -Dm755 target/release/marksight /app/bin/marksight
-      - install -Dm644 data/io.github.marksight.Marksight.desktop /app/share/applications/io.github.marksight.Marksight.desktop
-      - install -Dm644 data/io.github.marksight.Marksight.metainfo.xml /app/share/metainfo/io.github.marksight.Marksight.metainfo.xml
-      - install -Dm644 data/icons/hicolor/scalable/apps/io.github.marksight.Marksight.svg /app/share/icons/hicolor/scalable/apps/io.github.marksight.Marksight.svg
+      - install -Dm644 data/io.github.cinzatech.marksight.desktop /app/share/applications/io.github.cinzatech.marksight.desktop
+      - install -Dm644 data/io.github.cinzatech.marksight.metainfo.xml /app/share/metainfo/io.github.cinzatech.marksight.metainfo.xml
+      - install -Dm644 data/icons/hicolor/scalable/apps/io.github.cinzatech.marksight.svg /app/share/icons/hicolor/scalable/apps/io.github.cinzatech.marksight.svg
       - install -Dm644 data/marksight.1 /app/share/man/man1/marksight.1
     sources:
       - type: archive
-        url: https://github.com/marksight/marksight/archive/refs/tags/v0.1.0.tar.gz
+        url: https://github.com/cinzatech/marksight/archive/refs/tags/v0.1.0.tar.gz
         sha256: REPLACE_AT_SUBMISSION
         x-checker-data:
           type: json
-          url: https://api.github.com/repos/marksight/marksight/releases/latest
+          url: https://api.github.com/repos/cinzatech/marksight/releases/latest
           version-query: .tag_name
           url-query: .tarball_url
       - type: file

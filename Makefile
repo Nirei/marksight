@@ -1,7 +1,7 @@
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
 DATADIR ?= $(PREFIX)/share
-APP_ID ?= io.github.marksight.Marksight
+APP_ID ?= io.github.cinzatech.marksight
 
 .PHONY: all install uninstall clean check deb
 
