@@ -79,6 +79,19 @@ assets = [
   ["po/.mo/ta/LC_MESSAGES/marksight.mo", "usr/share/locale/ta/LC_MESSAGES/", "644"],
   ["po/.mo/fa/LC_MESSAGES/marksight.mo", "usr/share/locale/fa/LC_MESSAGES/", "644"],
   ["po/.mo/ko/LC_MESSAGES/marksight.mo", "usr/share/locale/ko/LC_MESSAGES/", "644"],
+  ["po/.mo/gl/LC_MESSAGES/marksight.mo", "usr/share/locale/gl/LC_MESSAGES/", "644"],
+  ["po/.mo/ca/LC_MESSAGES/marksight.mo", "usr/share/locale/ca/LC_MESSAGES/", "644"],
+  ["po/.mo/eu/LC_MESSAGES/marksight.mo", "usr/share/locale/eu/LC_MESSAGES/", "644"],
+  ["po/.mo/pl/LC_MESSAGES/marksight.mo", "usr/share/locale/pl/LC_MESSAGES/", "644"],
+  ["po/.mo/uk/LC_MESSAGES/marksight.mo", "usr/share/locale/uk/LC_MESSAGES/", "644"],
+  ["po/.mo/it/LC_MESSAGES/marksight.mo", "usr/share/locale/it/LC_MESSAGES/", "644"],
+  ["po/.mo/th/LC_MESSAGES/marksight.mo", "usr/share/locale/th/LC_MESSAGES/", "644"],
+  ["po/.mo/ml/LC_MESSAGES/marksight.mo", "usr/share/locale/ml/LC_MESSAGES/", "644"],
+  ["po/.mo/gu/LC_MESSAGES/marksight.mo", "usr/share/locale/gu/LC_MESSAGES/", "644"],
+  ["po/.mo/kn/LC_MESSAGES/marksight.mo", "usr/share/locale/kn/LC_MESSAGES/", "644"],
+  ["po/.mo/ast/LC_MESSAGES/marksight.mo", "usr/share/locale/ast/LC_MESSAGES/", "644"],
+  ["po/.mo/oc/LC_MESSAGES/marksight.mo", "usr/share/locale/oc/LC_MESSAGES/", "644"],
+  ["po/.mo/am/LC_MESSAGES/marksight.mo", "usr/share/locale/am/LC_MESSAGES/", "644"],
 ]
 
 [lints.clippy]

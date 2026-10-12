@@ -1,0 +1,137 @@
+# Malayalam translations for marksight package.
+# Copyright (C) 2026 THE marksight'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the marksight package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: marksight 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-12 16:22+0200\n"
+"PO-Revision-Date: 2026-10-12 15:53+0000\n"
+"Last-Translator: marksight contributors\n"
+"Language-Team: none\n"
+"Language: ml\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: src/app/loading.rs:130
+msgid "not a regular file"
+msgstr "സാധാരണ ഫയൽ അല്ല"
+
+#: src/app/loading.rs:135
+msgid "file too large: {size} byte (the limit is {limit} bytes)"
+msgid_plural "file too large: {size} bytes (the limit is {limit} bytes)"
+msgstr[0] "ഫയൽ വളരെ വലുതാണ്: {size} ബൈറ്റ് (പരിധി {limit} ബൈറ്റ് ആണ്)"
+msgstr[1] "ഫയൽ വളരെ വലുതാണ്: {size} ബൈറ്റുകൾ (പരിധി {limit} ബൈറ്റുകൾ ആണ്)"
+
+#: src/app/loading.rs:155
+msgid "file not found"
+msgstr "ഫയൽ കണ്ടെത്തിയില്ല"
+
+#: src/app/loading.rs:156
+msgid "permission denied"
+msgstr "അനുമതി നിഷേധിച്ചിരിക്കുന്നു"
+
+#: src/app/loading.rs:334
+msgid "(untitled heading)"
+msgstr "(പേരില്ലാത്ത തലക്കെട്ട്)"
+
+#: src/app/loading.rs:339
+msgid "Jump to {heading}"
+msgstr "{heading} എന്നതിലേക്ക് പോകുക"
+
+#: src/app/search.rs:101
+msgid "{position} of {total} match"
+msgid_plural "{position} of {total} matches"
+msgstr[0] "{total} പൊരുത്തത്തിൽ {position}"
+msgstr[1] "{total} പൊരുത്തങ്ങളിൽ {position}"
+
+#: src/app/window.rs:157
+msgid "Open a markdown file (Ctrl+O)"
+msgstr "ഒരു Markdown ഫയൽ തുറക്കുക (Ctrl+O)"
+
+#: src/app/window.rs:159
+msgid "Open markdown file"
+msgstr "Markdown ഫയൽ തുറക്കുക"
+
+#: src/app/window.rs:162
+msgid "Contents"
+msgstr "ഉള്ളടക്കം"
+
+#: src/app/window.rs:163
+msgid "Toggle the table of contents (F9)"
+msgstr "ഉള്ളടക്ക പട്ടിക കാണിക്കുക/മറയ്ക്കുക (F9)"
+
+#: src/app/window.rs:167
+msgid "About marksight"
+msgstr "marksight-നെക്കുറിച്ച്"
+
+#: src/app/window.rs:168
+msgid "Quit"
+msgstr "പുറത്തുകടക്കുക"
+
+#: src/app/window.rs:176
+msgid "Open the main menu"
+msgstr "പ്രധാന മെനു തുറക്കുക"
+
+#: src/app/window.rs:177
+msgid "Main menu"
+msgstr "പ്രധാന മെനു"
+
+#: src/app/window.rs:239
+msgid "Find in document"
+msgstr "രേഖയിൽ കണ്ടെത്തുക"
+
+#: src/app/window.rs:503
+msgid "A minimal, theme-native markdown viewer"
+msgstr "ഒരു ലളിതമായ, തീമിനനുസരിച്ചുള്ള Markdown ദർശിനി"
+
+#: src/app/window.rs:521
+msgid "Open a Markdown file to view it here"
+msgstr "ഇവിടെ കാണാൻ ഒരു Markdown ഫയൽ തുറക്കുക"
+
+#: src/app/window.rs:523
+msgid "Open a file…"
+msgstr "ഒരു ഫയൽ തുറക്കുക…"
+
+#: src/app/window.rs:527
+msgid "Ctrl+O open · F9 contents · Ctrl+F find · live reload on save"
+msgstr "Ctrl+O തുറക്കാൻ · F9 ഉള്ളടക്കം · Ctrl+F കണ്ടെത്താൻ · സേവ് ചെയ്യുമ്പോൾ തത്സമയം പുതുക്കും"
+
+#: src/app/window.rs:541
+msgid "Could not open file"
+msgstr "ഫയൽ തുറക്കാനായില്ല"
+
+#: src/app/window.rs:547
+msgid "Open another file…"
+msgstr "മറ്റൊരു ഫയൽ തുറക്കുക…"
+
+#: src/render.rs:345
+msgid "Footnotes"
+msgstr "അടിക്കുറിപ്പുകൾ"
+
+#: src/render.rs:582
+msgid "Note"
+msgstr "കുറിപ്പ്"
+
+#: src/render.rs:583
+msgid "Tip"
+msgstr "നിർദ്ദേശം"
+
+#: src/render.rs:584
+msgid "Important"
+msgstr "പ്രധാനം"
+
+#: src/render.rs:585
+msgid "Warning"
+msgstr "മുന്നറിയിപ്പ്"
+
+#: src/render.rs:586
+msgid "Caution"
+msgstr "ജാഗ്രത"
+
+#: src/render.rs:703
+msgid "🖼 {alt}: {url}"
+msgstr "🖼 {alt}: {url}"
