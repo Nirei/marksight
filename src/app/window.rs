@@ -17,7 +17,7 @@ use gtk::prelude::*;
 use gtk::{self as gtk};
 
 use super::links::scroll_to;
-use super::search::{cycle_find, install_find_poll, schedule_find};
+use super::search::{clear_find, cycle_find, install_find_poll, schedule_find};
 use super::{APP_ID, App, State};
 use crate::timing;
 
@@ -338,7 +338,7 @@ fn wire(app: &Rc<App>, _gtk_app: &gtk::Application, open_button: &gtk::Button) {
 
     let controller = gtk::ShortcutController::new();
     controller.set_scope(gtk::ShortcutScope::Managed);
-    for accel in ["<control>o", "F9", "<control>w", "<control>q"] {
+    for accel in ["<control>o", "<control>f", "F9", "<control>w", "<control>q"] {
         if let Some(trigger) = gtk::ShortcutTrigger::parse_string(accel) {
             let shortcut = gtk::Shortcut::new(
                 Some(trigger),
@@ -446,6 +446,7 @@ fn collect_pictures(widget: &gtk::Widget, out: &mut Vec<(i32, i32)>) {
 fn key_pressed(app: &Rc<App>, accel: &str) {
     match accel {
         "<control>o" => open_dialog(app),
+        "<control>f" => toggle_find(app),
         "F9" => toggle_toc(app),
         "<control>w" => app.ui.window.close(),
         "<control>q" => quit_or_close(&app.ui.window),
@@ -469,6 +470,21 @@ fn toggle_toc(app: &Rc<App>) {
     let visible = !app.ui.toc_column.is_visible();
     app.ui.toc_column.set_visible(visible);
     app.ui.toc_button.set_active(visible);
+}
+
+/// Ctrl+F: toggle the search bar. The bar's key capture only intercepts
+/// plain typing (it opens the bar and feeds the entry); GTK leaves the
+/// Ctrl+F shortcut to the application, so it belongs here with the other
+/// window shortcuts. Closing clears the search, mirroring what Escape
+/// does through `stop_search`.
+fn toggle_find(app: &Rc<App>) {
+    if !app.ui.search_bar.is_search_mode() {
+        app.ui.search_bar.set_search_mode(true);
+        app.ui.search_entry.grab_focus();
+    } else {
+        app.ui.search_bar.set_search_mode(false);
+        clear_find(app);
+    }
 }
 
 fn show_about(window: &gtk::ApplicationWindow) {
@@ -554,6 +570,18 @@ impl App {
     #[doc(hidden)]
     pub fn search_set(&self, text: &str) {
         self.ui.search_entry.set_text(text);
+    }
+
+    /// Toggles the search bar the way the Ctrl+F shortcut does; test hook
+    /// for the GUI smoke suite (key events cannot be synthesized there).
+    #[doc(hidden)]
+    pub fn toggle_find(self: &Rc<Self>) {
+        toggle_find(self);
+    }
+
+    #[doc(hidden)]
+    pub fn search_mode(&self) -> bool {
+        self.ui.search_bar.is_search_mode()
     }
 
     #[doc(hidden)]

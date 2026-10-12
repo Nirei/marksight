@@ -58,6 +58,7 @@ fn gui_smoke_suite() {
     toc_sidebar_fills_pane(&mv);
     search_finds_and_cycles(&mv);
     search_clears_highlights(&mv);
+    find_shortcut_toggles_search(&mv);
     unknown_anchor_link_is_handled_without_launching(&mv);
     search_inside_every_structure(&mv);
     scroll_targets_move_viewport(&mv);
@@ -182,6 +183,28 @@ fn search_clears_highlights(mv: &std::rc::Rc<app::App>) {
     mv.search_set("");
     pump_until(Duration::from_secs(2), || mv.search_counter().is_empty());
     assert!(mv.search_counter().is_empty());
+}
+
+fn find_shortcut_toggles_search(mv: &std::rc::Rc<app::App>) {
+    // The Ctrl+F path opens the bar into search mode...
+    assert!(!mv.search_mode(), "search bar should start closed");
+    mv.toggle_find();
+    assert!(mv.search_mode(), "toggle should enter search mode");
+
+    // ...searches still run while it is open...
+    mv.search_set("marksight");
+    assert!(
+        pump_until(Duration::from_secs(2), || !mv.search_counter().is_empty()),
+        "counter never populated with the bar open via toggle"
+    );
+
+    // ...and closing it clears the search, like Escape does.
+    mv.toggle_find();
+    assert!(!mv.search_mode(), "second toggle should leave search mode");
+    assert!(
+        pump_until(Duration::from_secs(2), || mv.search_counter().is_empty()),
+        "closing through the toggle should clear the counter"
+    );
 }
 
 fn search_inside_every_structure(mv: &std::rc::Rc<app::App>) {
