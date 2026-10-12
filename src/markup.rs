@@ -47,6 +47,18 @@ pub struct Highlight<'a> {
 }
 
 pub fn escape_text(text: &str) -> String {
+    escape(text, false)
+}
+
+pub fn escape_attr(value: &str) -> String {
+    escape(value, true)
+}
+
+/// One escaping table for both entry points: text content needs `& < >`
+/// replaced, attribute values additionally need both quote kinds. The
+/// control-character safety net ([`is_pango_unsafe`]) is the same
+/// one-for-one replacement in both, so offsets stay aligned either way.
+fn escape(text: &str, quotes: bool) -> String {
     let mut out = String::with_capacity(text.len());
     for ch in text.chars() {
         match ch {
@@ -59,22 +71,8 @@ pub fn escape_text(text: &str) -> String {
             '&' => out.push_str("&amp;"),
             '<' => out.push_str("&lt;"),
             '>' => out.push_str("&gt;"),
-            _ => out.push(ch),
-        }
-    }
-    out
-}
-
-pub fn escape_attr(value: &str) -> String {
-    let mut out = String::with_capacity(value.len());
-    for ch in value.chars() {
-        match ch {
-            c if is_pango_unsafe(c) => out.push('\u{FFFD}'),
-            '&' => out.push_str("&amp;"),
-            '<' => out.push_str("&lt;"),
-            '>' => out.push_str("&gt;"),
-            '"' => out.push_str("&quot;"),
-            '\'' => out.push_str("&apos;"),
+            '"' if quotes => out.push_str("&quot;"),
+            '\'' if quotes => out.push_str("&apos;"),
             _ => out.push(ch),
         }
     }

@@ -454,16 +454,7 @@ fn render_block(
             into.append(&widget);
         }
         Block::Code { text, .. } => {
-            let label = gtk::Label::new(None);
-            label.set_css_classes(&["mv-code"]);
-            label.set_xalign(0.0);
-            label.set_valign(gtk::Align::Start);
-            label.set_wrap(true);
-            label.set_wrap_mode(pango::WrapMode::WordChar);
-            label.connect_activate_link({
-                let handler = ctx.link_handler.clone();
-                move |_, uri| link_activate(&handler, uri)
-            });
+            let label = text_label(&["mv-code"], 0.0, ctx);
             let base = markup::code_markup(text, None);
             label.set_markup(&base);
             groups.push(LabelGroup {
@@ -703,12 +694,7 @@ fn picture_for(image: &markup::ImageInfo, ctx: &RenderCtx<'_>) -> gtk::Widget {
     let text = gettext("🖼 {alt}: {url}")
         .replace("{alt}", &image.alt)
         .replace("{url}", &image.url);
-    let fallback = gtk::Label::new(Some(&text));
-    fallback.set_css_classes(&["mv-image-fallback"]);
-    fallback.set_xalign(0.0);
-    fallback.set_wrap(true);
-    fallback.set_wrap_mode(pango::WrapMode::WordChar);
-    fallback.upcast::<gtk::Widget>()
+    plain_label(&text, &["mv-image-fallback"]).upcast::<gtk::Widget>()
 }
 
 /// A confined path that is a regular file within the size bound, ready to
