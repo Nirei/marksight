@@ -1,0 +1,137 @@
+# Uzbek translations for marksight package.
+# Copyright (C) 2026 THE marksight'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the marksight package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: marksight 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-12 16:22+0200\n"
+"PO-Revision-Date: 2026-10-12 16:33+0000\n"
+"Last-Translator: marksight contributors\n"
+"Language-Team: none\n"
+"Language: uz\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/app/loading.rs:130
+msgid "not a regular file"
+msgstr "oddiy fayl emas"
+
+#: src/app/loading.rs:135
+msgid "file too large: {size} byte (the limit is {limit} bytes)"
+msgid_plural "file too large: {size} bytes (the limit is {limit} bytes)"
+msgstr[0] "fayl juda katta: {size} bayt (chegara {limit} bayt)"
+msgstr[1] "fayl juda katta: {size} bayt (chegara {limit} bayt)"
+
+#: src/app/loading.rs:155
+msgid "file not found"
+msgstr "fayl topilmadi"
+
+#: src/app/loading.rs:156
+msgid "permission denied"
+msgstr "ruxsat berilmagan"
+
+#: src/app/loading.rs:334
+msgid "(untitled heading)"
+msgstr "(sarlavhasiz boʻlim)"
+
+#: src/app/loading.rs:339
+msgid "Jump to {heading}"
+msgstr "{heading} sarlavhasiga oʻtish"
+
+#: src/app/search.rs:101
+msgid "{position} of {total} match"
+msgid_plural "{position} of {total} matches"
+msgstr[0] "{total} ta natijadan {position}-tasi"
+msgstr[1] "{total} ta natijadan {position}-tasi"
+
+#: src/app/window.rs:157
+msgid "Open a markdown file (Ctrl+O)"
+msgstr "markdown faylini ochish (Ctrl+O)"
+
+#: src/app/window.rs:159
+msgid "Open markdown file"
+msgstr "markdown faylini ochish"
+
+#: src/app/window.rs:162
+msgid "Contents"
+msgstr "Mundarija"
+
+#: src/app/window.rs:163
+msgid "Toggle the table of contents (F9)"
+msgstr "Mundarijani koʻrsatish/yashirish (F9)"
+
+#: src/app/window.rs:167
+msgid "About marksight"
+msgstr "marksight haqida"
+
+#: src/app/window.rs:168
+msgid "Quit"
+msgstr "Chiqish"
+
+#: src/app/window.rs:176
+msgid "Open the main menu"
+msgstr "Asosiy menyuni ochish"
+
+#: src/app/window.rs:177
+msgid "Main menu"
+msgstr "Asosiy menyu"
+
+#: src/app/window.rs:239
+msgid "Find in document"
+msgstr "Hujjatda qidirish"
+
+#: src/app/window.rs:503
+msgid "A minimal, theme-native markdown viewer"
+msgstr "Tizim mavzusiga mos, minimal markdown koʻrish dasturi"
+
+#: src/app/window.rs:521
+msgid "Open a Markdown file to view it here"
+msgstr "Bu yerda koʻrish uchun Markdown faylini oching"
+
+#: src/app/window.rs:523
+msgid "Open a file…"
+msgstr "Fayl ochish…"
+
+#: src/app/window.rs:527
+msgid "Ctrl+O open · F9 contents · Ctrl+F find · live reload on save"
+msgstr "Ctrl+O ochish · F9 mundarija · Ctrl+F qidirish · saqlashda jonli qayta yuklash"
+
+#: src/app/window.rs:541
+msgid "Could not open file"
+msgstr "Faylni ochib boʻlmadi"
+
+#: src/app/window.rs:547
+msgid "Open another file…"
+msgstr "Boshqa fayl ochish…"
+
+#: src/render.rs:345
+msgid "Footnotes"
+msgstr "Izohlar"
+
+#: src/render.rs:582
+msgid "Note"
+msgstr "Eslatma"
+
+#: src/render.rs:583
+msgid "Tip"
+msgstr "Maslahat"
+
+#: src/render.rs:584
+msgid "Important"
+msgstr "Muhim"
+
+#: src/render.rs:585
+msgid "Warning"
+msgstr "Ogohlantirish"
+
+#: src/render.rs:586
+msgid "Caution"
+msgstr "Ehtiyot boʻling"
+
+#: src/render.rs:703
+msgid "🖼 {alt}: {url}"
+msgstr "🖼 {alt}: {url}"

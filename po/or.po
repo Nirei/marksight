@@ -1,0 +1,137 @@
+# Oriya translations for marksight package.
+# Copyright (C) 2026 THE marksight'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the marksight package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: marksight 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-12 16:22+0200\n"
+"PO-Revision-Date: 2026-10-12 16:31+0000\n"
+"Last-Translator: marksight contributors\n"
+"Language-Team: none\n"
+"Language: or\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: src/app/loading.rs:130
+msgid "not a regular file"
+msgstr "ସାଧାରଣ ଫାଇଲ୍ ନୁହେଁ"
+
+#: src/app/loading.rs:135
+msgid "file too large: {size} byte (the limit is {limit} bytes)"
+msgid_plural "file too large: {size} bytes (the limit is {limit} bytes)"
+msgstr[0] "ଫାଇଲ୍ ଅତି ବଡ଼: {size} ବାଇଟ୍ (ସୀମା {limit} ବାଇଟ୍)"
+msgstr[1] "ଫାଇଲ୍ ଅତି ବଡ଼: {size} ବାଇଟ୍ (ସୀମା {limit} ବାଇଟ୍)"
+
+#: src/app/loading.rs:155
+msgid "file not found"
+msgstr "ଫାଇଲ୍ ମିଳିଲା ନାହିଁ"
+
+#: src/app/loading.rs:156
+msgid "permission denied"
+msgstr "ଅନୁମତି ମନା କରାଯାଇଛି"
+
+#: src/app/loading.rs:334
+msgid "(untitled heading)"
+msgstr "(ଶୀର୍ଷକହୀନ ଶୀର୍ଷାଂଶ)"
+
+#: src/app/loading.rs:339
+msgid "Jump to {heading}"
+msgstr "{heading} କୁ ଯାଆନ୍ତୁ"
+
+#: src/app/search.rs:101
+msgid "{position} of {total} match"
+msgid_plural "{position} of {total} matches"
+msgstr[0] "{total} ମେଳ ମଧ୍ୟରୁ {position}"
+msgstr[1] "{total} ମେଳଗୁଡ଼ିକ ମଧ୍ୟରୁ {position}"
+
+#: src/app/window.rs:157
+msgid "Open a markdown file (Ctrl+O)"
+msgstr "ଗୋଟିଏ Markdown ଫାଇଲ୍ ଖୋଲନ୍ତୁ (Ctrl+O)"
+
+#: src/app/window.rs:159
+msgid "Open markdown file"
+msgstr "Markdown ଫାଇଲ୍ ଖୋଲନ୍ତୁ"
+
+#: src/app/window.rs:162
+msgid "Contents"
+msgstr "ବିଷୟବସ୍ତୁ"
+
+#: src/app/window.rs:163
+msgid "Toggle the table of contents (F9)"
+msgstr "ବିଷୟବସ୍ତୁ ତାଲିକା ଦେଖାନ୍ତୁ/ଲୁଚାନ୍ତୁ (F9)"
+
+#: src/app/window.rs:167
+msgid "About marksight"
+msgstr "marksight ବିଷୟରେ"
+
+#: src/app/window.rs:168
+msgid "Quit"
+msgstr "ବିଦାୟ ନିଅନ୍ତୁ"
+
+#: src/app/window.rs:176
+msgid "Open the main menu"
+msgstr "ମୁଖ୍ୟ ମେନୁ ଖୋଲନ୍ତୁ"
+
+#: src/app/window.rs:177
+msgid "Main menu"
+msgstr "ମୁଖ୍ୟ ମେନୁ"
+
+#: src/app/window.rs:239
+msgid "Find in document"
+msgstr "ଦଲିଲରେ ଖୋଜନ୍ତୁ"
+
+#: src/app/window.rs:503
+msgid "A minimal, theme-native markdown viewer"
+msgstr "ଏକ ସର୍ବନିମ୍ନ, ଥିମ୍ ସହ ମେଳଖାଉଥିବା Markdown ଦର୍ଶକ"
+
+#: src/app/window.rs:521
+msgid "Open a Markdown file to view it here"
+msgstr "ଏଠାରେ ଦେଖିବା ପାଇଁ ଗୋଟିଏ Markdown ଫାଇଲ୍ ଖୋଲନ୍ତୁ"
+
+#: src/app/window.rs:523
+msgid "Open a file…"
+msgstr "ଏକ ଫାଇଲ୍ ଖୋଲନ୍ତୁ…"
+
+#: src/app/window.rs:527
+msgid "Ctrl+O open · F9 contents · Ctrl+F find · live reload on save"
+msgstr "Ctrl+O ଖୋଲିବା · F9 ବିଷୟବସ୍ତୁ · Ctrl+F ଖୋଜିବା · ସଞ୍ଚୟ କଲାବେଳେ ସ୍ୱୟଂ ପୁନଃଲୋଡ୍"
+
+#: src/app/window.rs:541
+msgid "Could not open file"
+msgstr "ଫାଇଲ୍ ଖୋଲିହେଲା ନାହିଁ"
+
+#: src/app/window.rs:547
+msgid "Open another file…"
+msgstr "ଅନ୍ୟ ଏକ ଫାଇଲ୍ ଖୋଲନ୍ତୁ…"
+
+#: src/render.rs:345
+msgid "Footnotes"
+msgstr "ପାଦଟୀକାଗୁଡ଼ିକ"
+
+#: src/render.rs:582
+msgid "Note"
+msgstr "ଟିପ୍ପଣୀ"
+
+#: src/render.rs:583
+msgid "Tip"
+msgstr "ସଙ୍କେତ"
+
+#: src/render.rs:584
+msgid "Important"
+msgstr "ଗୁରୁତ୍ୱପୂର୍ଣ୍ଣ"
+
+#: src/render.rs:585
+msgid "Warning"
+msgstr "ଚେତାବନୀ"
+
+#: src/render.rs:586
+msgid "Caution"
+msgstr "ସାବଧାନ"
+
+#: src/render.rs:703
+msgid "🖼 {alt}: {url}"
+msgstr "🖼 {alt}: {url}"
