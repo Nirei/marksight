@@ -1,0 +1,137 @@
+# Yiddish translations for marksight package.
+# Copyright (C) 2026 THE marksight'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the marksight package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: marksight 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-12 16:22+0200\n"
+"PO-Revision-Date: 2026-10-12 17:20+0000\n"
+"Last-Translator: marksight contributors\n"
+"Language-Team: none\n"
+"Language: yi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: src/app/loading.rs:130
+msgid "not a regular file"
+msgstr "נישט קיין רעגולערע טעקע"
+
+#: src/app/loading.rs:135
+msgid "file too large: {size} byte (the limit is {limit} bytes)"
+msgid_plural "file too large: {size} bytes (the limit is {limit} bytes)"
+msgstr[0] "טעקע איז צו גרויס: {size} בײַט (די גרענעץ איז {limit} בײַטן)"
+msgstr[1] "טעקע איז צו גרויס: {size} בײַטן (די גרענעץ איז {limit} בײַטן)"
+
+#: src/app/loading.rs:155
+msgid "file not found"
+msgstr "טעקע נישט געפֿונען"
+
+#: src/app/loading.rs:156
+msgid "permission denied"
+msgstr "נישט קיין רשות"
+
+#: src/app/loading.rs:334
+msgid "(untitled heading)"
+msgstr "(איבערשריפֿט אָן א נאָמען)"
+
+#: src/app/loading.rs:339
+msgid "Jump to {heading}"
+msgstr "שפּרינג צו {heading}"
+
+#: src/app/search.rs:101
+msgid "{position} of {total} match"
+msgid_plural "{position} of {total} matches"
+msgstr[0] "{position} פֿון {total} טרעף"
+msgstr[1] "{position} פֿון {total} טרעפֿער"
+
+#: src/app/window.rs:157
+msgid "Open a markdown file (Ctrl+O)"
+msgstr "עפֿענען אַ Markdown־טעקע (Ctrl+O)"
+
+#: src/app/window.rs:159
+msgid "Open markdown file"
+msgstr "עפֿענען Markdown־טעקע"
+
+#: src/app/window.rs:162
+msgid "Contents"
+msgstr "אינהאַלט"
+
+#: src/app/window.rs:163
+msgid "Toggle the table of contents (F9)"
+msgstr "באַווײַזן אָדער באַהאַלטן די אינהאַלט־פֿאַרצייכענונג (F9)"
+
+#: src/app/window.rs:167
+msgid "About marksight"
+msgstr "וועגן marksight"
+
+#: src/app/window.rs:168
+msgid "Quit"
+msgstr "אַרויסגיין"
+
+#: src/app/window.rs:176
+msgid "Open the main menu"
+msgstr "עפֿענען דאָס הויפּט־מעניו"
+
+#: src/app/window.rs:177
+msgid "Main menu"
+msgstr "הויפּט־מעניו"
+
+#: src/app/window.rs:239
+msgid "Find in document"
+msgstr "געפֿינען אין דאָקומענט"
+
+#: src/app/window.rs:503
+msgid "A minimal, theme-native markdown viewer"
+msgstr "אַ מינימאַלער Markdown־קוקער וואָס פֿאָלגט דער סיסטעם־טעמע"
+
+#: src/app/window.rs:521
+msgid "Open a Markdown file to view it here"
+msgstr "עפֿענען אַ Markdown־טעקע צו זען זי דאָ"
+
+#: src/app/window.rs:523
+msgid "Open a file…"
+msgstr "עפֿענען אַ טעקע…"
+
+#: src/app/window.rs:527
+msgid "Ctrl+O open · F9 contents · Ctrl+F find · live reload on save"
+msgstr "Ctrl+O עפֿענען · F9 אינהאַלט · Ctrl+F געפֿינען · לעבעדיקע דערהיינטיקונג בײַם היטן"
+
+#: src/app/window.rs:541
+msgid "Could not open file"
+msgstr "די טעקע לאָזט זיך נישט עפֿענען"
+
+#: src/app/window.rs:547
+msgid "Open another file…"
+msgstr "עפֿענען אַן אַנדערע טעקע…"
+
+#: src/render.rs:345
+msgid "Footnotes"
+msgstr "פֿוסנאָטן"
+
+#: src/render.rs:582
+msgid "Note"
+msgstr "הערה"
+
+#: src/render.rs:583
+msgid "Tip"
+msgstr "עצה"
+
+#: src/render.rs:584
+msgid "Important"
+msgstr "וויכטיק"
+
+#: src/render.rs:585
+msgid "Warning"
+msgstr "וואַרענונג"
+
+#: src/render.rs:586
+msgid "Caution"
+msgstr "זיכערהייט"
+
+#: src/render.rs:703
+msgid "🖼 {alt}: {url}"
+msgstr "🖼 {alt}: {url}"

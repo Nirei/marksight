@@ -1,0 +1,139 @@
+# Language srd translations for marksight package.
+# Copyright (C) 2026 THE marksight'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the marksight package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: marksight 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-12 16:22+0200\n"
+"PO-Revision-Date: 2026-10-12 17:17+0000\n"
+"Last-Translator: marksight contributors\n"
+"Language-Team: none\n"
+"Language: srd\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: src/app/loading.rs:130
+msgid "not a regular file"
+msgstr "no est un'archìviu regulare"
+
+#: src/app/loading.rs:135
+msgid "file too large: {size} byte (the limit is {limit} bytes)"
+msgid_plural "file too large: {size} bytes (the limit is {limit} bytes)"
+msgstr[0] "archìviu tropu mannu: {size} byte (su lìmite est {limit} byte)"
+msgstr[1] "archìviu tropu mannu: {size} byte (su lìmite est {limit} byte)"
+
+#: src/app/loading.rs:155
+msgid "file not found"
+msgstr "archìviu no agatadu"
+
+#: src/app/loading.rs:156
+msgid "permission denied"
+msgstr "permissu negadu"
+
+#: src/app/loading.rs:334
+msgid "(untitled heading)"
+msgstr "(setzione chene tìtulu)"
+
+#: src/app/loading.rs:339
+msgid "Jump to {heading}"
+msgstr "Brincare a {heading}"
+
+#: src/app/search.rs:101
+msgid "{position} of {total} match"
+msgid_plural "{position} of {total} matches"
+msgstr[0] "{position} de {total} agatamentu"
+msgstr[1] "{position} de {total} agatamentos"
+
+#: src/app/window.rs:157
+msgid "Open a markdown file (Ctrl+O)"
+msgstr "Aberi un'archìviu markdown (Ctrl+O)"
+
+#: src/app/window.rs:159
+msgid "Open markdown file"
+msgstr "Aberi un'archìviu markdown"
+
+#: src/app/window.rs:162
+msgid "Contents"
+msgstr "Cuntenutos"
+
+#: src/app/window.rs:163
+msgid "Toggle the table of contents (F9)"
+msgstr "Ammustrat o cuat sa taula de sos cuntenutos (F9)"
+
+#: src/app/window.rs:167
+msgid "About marksight"
+msgstr "Informatziones de marksight"
+
+#: src/app/window.rs:168
+msgid "Quit"
+msgstr "Essire"
+
+#: src/app/window.rs:176
+msgid "Open the main menu"
+msgstr "Aberi su menù printzipale"
+
+#: src/app/window.rs:177
+msgid "Main menu"
+msgstr "Menù printzipale"
+
+#: src/app/window.rs:239
+msgid "Find in document"
+msgstr "Chirca in su documentu"
+
+#: src/app/window.rs:503
+msgid "A minimal, theme-native markdown viewer"
+msgstr "Unu visualizadore markdown minimale chi sighit su tema de su sistema"
+
+#: src/app/window.rs:521
+msgid "Open a Markdown file to view it here"
+msgstr "Aberi un'archìviu Markdown pro ddu bìdere inoghe"
+
+#: src/app/window.rs:523
+msgid "Open a file…"
+msgstr "Aberi un'archìviu…"
+
+#: src/app/window.rs:527
+msgid "Ctrl+O open · F9 contents · Ctrl+F find · live reload on save"
+msgstr ""
+"Ctrl+O aberi · F9 cuntenutos · Ctrl+F chirca · agiornamentu automàticu cando "
+"sarvas"
+
+#: src/app/window.rs:541
+msgid "Could not open file"
+msgstr "Non si podet abèrrere s'archìviu"
+
+#: src/app/window.rs:547
+msgid "Open another file…"
+msgstr "Aberi un'àteru archìviu…"
+
+#: src/render.rs:345
+msgid "Footnotes"
+msgstr "Notas a pee de pàgina"
+
+#: src/render.rs:582
+msgid "Note"
+msgstr "Nota"
+
+#: src/render.rs:583
+msgid "Tip"
+msgstr "Cussìgiu"
+
+#: src/render.rs:584
+msgid "Important"
+msgstr "Importante"
+
+#: src/render.rs:585
+msgid "Warning"
+msgstr "Avisu"
+
+#: src/render.rs:586
+msgid "Caution"
+msgstr "Atentzione"
+
+#: src/render.rs:703
+msgid "🖼 {alt}: {url}"
+msgstr "🖼 {alt}: {url}"

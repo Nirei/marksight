@@ -42,7 +42,7 @@ vector does not exist here.
 
 ## Translations
 
-The interface ships in English plus 72 translated locales. The catalogs
+The interface ships in English plus 100 translated locales. The catalogs
 are machine translations, checked for terminology, placeholders and plural
 forms but not reviewed by native speakers; quality varies, and the smaller
 languages especially deserve a human eye. Improvements are welcome: edit

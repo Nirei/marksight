@@ -1,0 +1,140 @@
+# Belarusian translations for marksight package.
+# Copyright (C) 2026 THE marksight'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the marksight package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: marksight 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-12 16:22+0200\n"
+"PO-Revision-Date: 2026-10-12 16:59+0000\n"
+"Last-Translator: marksight contributors\n"
+"Language-Team: none\n"
+"Language: be\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: src/app/loading.rs:130
+msgid "not a regular file"
+msgstr "не звычайны файл"
+
+#: src/app/loading.rs:135
+msgid "file too large: {size} byte (the limit is {limit} bytes)"
+msgid_plural "file too large: {size} bytes (the limit is {limit} bytes)"
+msgstr[0] "файл занадта вялікі: {size} байт (максімум {limit} байта)"
+msgstr[1] "файл занадта вялікі: {size} байта (максімум {limit} байта)"
+msgstr[2] "файл занадта вялікі: {size} байтаў (максімум {limit} байта)"
+
+#: src/app/loading.rs:155
+msgid "file not found"
+msgstr "файл не знойдзены"
+
+#: src/app/loading.rs:156
+msgid "permission denied"
+msgstr "у доступе адмоўлена"
+
+#: src/app/loading.rs:334
+msgid "(untitled heading)"
+msgstr "(загаловак без назвы)"
+
+#: src/app/loading.rs:339
+msgid "Jump to {heading}"
+msgstr "Перайсці да {heading}"
+
+#: src/app/search.rs:101
+msgid "{position} of {total} match"
+msgid_plural "{position} of {total} matches"
+msgstr[0] "{position} з {total} збор"
+msgstr[1] "{position} з {total} збора"
+msgstr[2] "{position} з {total} збораў"
+
+#: src/app/window.rs:157
+msgid "Open a markdown file (Ctrl+O)"
+msgstr "Адкрыць файл Markdown (Ctrl+O)"
+
+#: src/app/window.rs:159
+msgid "Open markdown file"
+msgstr "Адкрыць файл Markdown"
+
+#: src/app/window.rs:162
+msgid "Contents"
+msgstr "Змест"
+
+#: src/app/window.rs:163
+msgid "Toggle the table of contents (F9)"
+msgstr "Паказаць ці схаваць змест (F9)"
+
+#: src/app/window.rs:167
+msgid "About marksight"
+msgstr "Пра marksight"
+
+#: src/app/window.rs:168
+msgid "Quit"
+msgstr "Выйсці"
+
+#: src/app/window.rs:176
+msgid "Open the main menu"
+msgstr "Адкрыць галоўнае меню"
+
+#: src/app/window.rs:177
+msgid "Main menu"
+msgstr "Галоўнае меню"
+
+#: src/app/window.rs:239
+msgid "Find in document"
+msgstr "Пошук у дакуменце"
+
+#: src/app/window.rs:503
+msgid "A minimal, theme-native markdown viewer"
+msgstr "Мінімальны праглядальнік Markdown, які выкарыстоўвае сістэмную тэму"
+
+#: src/app/window.rs:521
+msgid "Open a Markdown file to view it here"
+msgstr "Адкрыйце файл Markdown, каб праглядзець яго тут"
+
+#: src/app/window.rs:523
+msgid "Open a file…"
+msgstr "Адкрыць файл…"
+
+#: src/app/window.rs:527
+msgid "Ctrl+O open · F9 contents · Ctrl+F find · live reload on save"
+msgstr "Ctrl+O: адкрыццё · F9: змест · Ctrl+F: пошук · аўтаабнаўленне пры захаванні"
+
+#: src/app/window.rs:541
+msgid "Could not open file"
+msgstr "Не ўдалося адкрыць файл"
+
+#: src/app/window.rs:547
+msgid "Open another file…"
+msgstr "Адкрыць іншы файл…"
+
+#: src/render.rs:345
+msgid "Footnotes"
+msgstr "Зноскі"
+
+#: src/render.rs:582
+msgid "Note"
+msgstr "Заўвага"
+
+#: src/render.rs:583
+msgid "Tip"
+msgstr "Парада"
+
+#: src/render.rs:584
+msgid "Important"
+msgstr "Важна"
+
+#: src/render.rs:585
+msgid "Warning"
+msgstr "Папярэджанне"
+
+#: src/render.rs:586
+msgid "Caution"
+msgstr "Асцярожна"
+
+#: src/render.rs:703
+msgid "🖼 {alt}: {url}"
+msgstr "🖼 {alt}: {url}"
