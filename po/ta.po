@@ -1,0 +1,137 @@
+# Tamil translations for marksight package.
+# Copyright (C) 2026 THE marksight'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the marksight package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: marksight 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-12 16:22+0200\n"
+"PO-Revision-Date: 2026-10-12 15:39+0000\n"
+"Last-Translator: marksight contributors\n"
+"Language-Team: none\n"
+"Language: ta\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: src/app/loading.rs:130
+msgid "not a regular file"
+msgstr "வழக்கமான கோப்பு அல்ல"
+
+#: src/app/loading.rs:135
+msgid "file too large: {size} byte (the limit is {limit} bytes)"
+msgid_plural "file too large: {size} bytes (the limit is {limit} bytes)"
+msgstr[0] "கோப்பு மிகவும் பெரியது: {size} பைட் (வரம்பு {limit} பைட்கள்)"
+msgstr[1] "கோப்பு மிகவும் பெரியது: {size} பைட்கள் (வரம்பு {limit} பைட்கள்)"
+
+#: src/app/loading.rs:155
+msgid "file not found"
+msgstr "கோப்பு கிடைக்கவில்லை"
+
+#: src/app/loading.rs:156
+msgid "permission denied"
+msgstr "அனுமதி மறுக்கப்பட்டது"
+
+#: src/app/loading.rs:334
+msgid "(untitled heading)"
+msgstr "(பெயரிடப்படாத தலைப்பு)"
+
+#: src/app/loading.rs:339
+msgid "Jump to {heading}"
+msgstr "{heading} க்குச் செல்லவும்"
+
+#: src/app/search.rs:101
+msgid "{position} of {total} match"
+msgid_plural "{position} of {total} matches"
+msgstr[0] "{total} இல் {position} பொருத்தம்"
+msgstr[1] "{total} இல் {position} பொருத்தங்கள்"
+
+#: src/app/window.rs:157
+msgid "Open a markdown file (Ctrl+O)"
+msgstr "ஒரு Markdown கோப்பைத் திறக்கவும் (Ctrl+O)"
+
+#: src/app/window.rs:159
+msgid "Open markdown file"
+msgstr "Markdown கோப்பைத் திறக்கவும்"
+
+#: src/app/window.rs:162
+msgid "Contents"
+msgstr "பொருளடக்கம்"
+
+#: src/app/window.rs:163
+msgid "Toggle the table of contents (F9)"
+msgstr "பொருளடக்கத்தை நிலைமாற்றவும் (F9)"
+
+#: src/app/window.rs:167
+msgid "About marksight"
+msgstr "marksight பற்றி"
+
+#: src/app/window.rs:168
+msgid "Quit"
+msgstr "வெளியேறவும்"
+
+#: src/app/window.rs:176
+msgid "Open the main menu"
+msgstr "முதன்மை மெனுவைத் திறக்கவும்"
+
+#: src/app/window.rs:177
+msgid "Main menu"
+msgstr "முதன்மை மெனு"
+
+#: src/app/window.rs:239
+msgid "Find in document"
+msgstr "ஆவணத்தில் தேடவும்"
+
+#: src/app/window.rs:503
+msgid "A minimal, theme-native markdown viewer"
+msgstr "எளிமையான, கருப்பொருளுக்கு ஏற்ற Markdown காட்சியகம்"
+
+#: src/app/window.rs:521
+msgid "Open a Markdown file to view it here"
+msgstr "இங்கே பார்க்க ஒரு Markdown கோப்பைத் திறக்கவும்"
+
+#: src/app/window.rs:523
+msgid "Open a file…"
+msgstr "கோப்பைத் திறக்கவும்…"
+
+#: src/app/window.rs:527
+msgid "Ctrl+O open · F9 contents · Ctrl+F find · live reload on save"
+msgstr "Ctrl+O திறத்தல் · F9 பொருளடக்கம் · Ctrl+F தேடல் · சேமிக்கும்போது தானாக மீள்ஏற்றம்"
+
+#: src/app/window.rs:541
+msgid "Could not open file"
+msgstr "கோப்பைத் திறக்க முடியவில்லை"
+
+#: src/app/window.rs:547
+msgid "Open another file…"
+msgstr "வேறு கோப்பைத் திறக்கவும்…"
+
+#: src/render.rs:345
+msgid "Footnotes"
+msgstr "அடிக்குறிப்புகள்"
+
+#: src/render.rs:582
+msgid "Note"
+msgstr "குறிப்பு"
+
+#: src/render.rs:583
+msgid "Tip"
+msgstr "உதவிக்குறிப்பு"
+
+#: src/render.rs:584
+msgid "Important"
+msgstr "முக்கியம்"
+
+#: src/render.rs:585
+msgid "Warning"
+msgstr "எச்சரிக்கை"
+
+#: src/render.rs:586
+msgid "Caution"
+msgstr "எச்சரிப்பு"
+
+#: src/render.rs:703
+msgid "🖼 {alt}: {url}"
+msgstr "🖼 {alt}: {url}"

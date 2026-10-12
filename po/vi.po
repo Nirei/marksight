@@ -1,0 +1,135 @@
+# Vietnamese translations for marksight package.
+# Copyright (C) 2026 THE marksight'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the marksight package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: marksight 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-12 16:22+0200\n"
+"PO-Revision-Date: 2026-10-12 15:34+0000\n"
+"Last-Translator: marksight contributors\n"
+"Language-Team: none\n"
+"Language: vi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: src/app/loading.rs:130
+msgid "not a regular file"
+msgstr "Không phải là tập tin thông thường"
+
+#: src/app/loading.rs:135
+msgid "file too large: {size} byte (the limit is {limit} bytes)"
+msgid_plural "file too large: {size} bytes (the limit is {limit} bytes)"
+msgstr[0] "Tập tin quá lớn: {size} byte (giới hạn là {limit} byte)"
+
+#: src/app/loading.rs:155
+msgid "file not found"
+msgstr "Không tìm thấy tập tin"
+
+#: src/app/loading.rs:156
+msgid "permission denied"
+msgstr "Từ chối quyền truy cập"
+
+#: src/app/loading.rs:334
+msgid "(untitled heading)"
+msgstr "(tiêu đề không tên)"
+
+#: src/app/loading.rs:339
+msgid "Jump to {heading}"
+msgstr "Chuyển đến {heading}"
+
+#: src/app/search.rs:101
+msgid "{position} of {total} match"
+msgid_plural "{position} of {total} matches"
+msgstr[0] "Kết quả {position} trên {total}"
+
+#: src/app/window.rs:157
+msgid "Open a markdown file (Ctrl+O)"
+msgstr "Mở một tập tin markdown (Ctrl+O)"
+
+#: src/app/window.rs:159
+msgid "Open markdown file"
+msgstr "Mở tập tin markdown"
+
+#: src/app/window.rs:162
+msgid "Contents"
+msgstr "Mục lục"
+
+#: src/app/window.rs:163
+msgid "Toggle the table of contents (F9)"
+msgstr "Bật/tắt mục lục (F9)"
+
+#: src/app/window.rs:167
+msgid "About marksight"
+msgstr "Giới thiệu về marksight"
+
+#: src/app/window.rs:168
+msgid "Quit"
+msgstr "Thoát"
+
+#: src/app/window.rs:176
+msgid "Open the main menu"
+msgstr "Mở trình đơn chính"
+
+#: src/app/window.rs:177
+msgid "Main menu"
+msgstr "Trình đơn chính"
+
+#: src/app/window.rs:239
+msgid "Find in document"
+msgstr "Tìm trong tài liệu"
+
+#: src/app/window.rs:503
+msgid "A minimal, theme-native markdown viewer"
+msgstr "Trình xem markdown tối giản theo chủ đề hệ thống"
+
+#: src/app/window.rs:521
+msgid "Open a Markdown file to view it here"
+msgstr "Mở một tập tin Markdown để xem tại đây"
+
+#: src/app/window.rs:523
+msgid "Open a file…"
+msgstr "Mở tập tin…"
+
+#: src/app/window.rs:527
+msgid "Ctrl+O open · F9 contents · Ctrl+F find · live reload on save"
+msgstr "Ctrl+O mở · F9 mục lục · Ctrl+F tìm · tự tải lại khi lưu"
+
+#: src/app/window.rs:541
+msgid "Could not open file"
+msgstr "Không thể mở tập tin"
+
+#: src/app/window.rs:547
+msgid "Open another file…"
+msgstr "Mở tập tin khác…"
+
+#: src/render.rs:345
+msgid "Footnotes"
+msgstr "Chú thích cuối trang"
+
+#: src/render.rs:582
+msgid "Note"
+msgstr "Ghi chú"
+
+#: src/render.rs:583
+msgid "Tip"
+msgstr "Mẹo"
+
+#: src/render.rs:584
+msgid "Important"
+msgstr "Quan trọng"
+
+#: src/render.rs:585
+msgid "Warning"
+msgstr "Cảnh báo"
+
+#: src/render.rs:586
+msgid "Caution"
+msgstr "Thận trọng"
+
+#: src/render.rs:703
+msgid "🖼 {alt}: {url}"
+msgstr "🖼 {alt}: {url}"
