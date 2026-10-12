@@ -150,14 +150,45 @@ fn assert_well_formed_block(
             );
             prop_assert!(segment.char_start <= walk.text.chars().count());
         }
-        for image in &walk.images {
-            prop_assert!(walk.text.contains(&image.alt) || image.alt.is_empty());
-        }
+        // The searchable text is exactly the characters the markup
+        // renders: image alt (tooltip-only) and anything else invisible
+        // must never enter the index, or find reports unshowable matches.
+        let rendered: usize = walk
+            .segments
+            .iter()
+            .map(|s| strip_tags(&s.markup).chars().count())
+            .sum();
+        prop_assert_eq!(
+            rendered,
+            walk.text.chars().count(),
+            "walked text must be exactly the rendered characters"
+        );
     }
     if let Block::Code { text, .. } = block {
         prop_assert!(markup::is_well_formed(&markup::code_markup(text, None)));
     }
     Ok(())
+}
+
+fn strip_tags(markup: &str) -> String {
+    let mut out = String::new();
+    let mut in_tag = false;
+    for ch in markup.chars() {
+        match ch {
+            '<' => in_tag = true,
+            '>' => in_tag = false,
+            _ if !in_tag => out.push(ch),
+            _ => {}
+        }
+    }
+    // The only entities our markup ever contains are the five escape_text
+    // and escape_attr emit (is_well_formed enforces that); unescape them so
+    // character counts compare against the plain text.
+    out.replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", "\"")
+        .replace("&apos;", "'")
+        .replace("&amp;", "&")
 }
 
 proptest! {

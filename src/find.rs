@@ -210,6 +210,16 @@ mod tests {
     }
 
     #[test]
+    fn image_alt_text_is_not_searchable() {
+        // Alt text is tooltip-only, never rendered: a needle inside it
+        // must not be reported as a match no label can highlight.
+        assert!(find(&index("![needle alt](img.png) tail"), "needle").is_empty());
+        let matches = find(&index("visible needle ![needle alt](img.png)"), "needle");
+        assert_eq!(matches.len(), 1, "only the visible occurrence counts");
+        assert_eq!(matches[0].start, 8);
+    }
+
+    #[test]
     fn search_covers_table_and_list_text() {
         let idx = index("| needle |\n|---|\n| x |\n\n- needle\n- other");
         let matches = find(&idx, "needle");

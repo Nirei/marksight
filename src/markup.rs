@@ -286,7 +286,11 @@ fn walk_into(inlines: &[Inline], walker: &mut Walker<'_>) {
             }
             Inline::Image { url, alt, title } => {
                 walker.boundary(true);
-                walker.push_chars(alt);
+                // Alt text is the picture's tooltip, never rendered
+                // content: it stays out of the searchable text, so find
+                // cannot report a match no label can show. Offsets stay
+                // aligned because `text` is exactly the characters emitted
+                // to markup, and images emit none.
                 walker.images.push(ImageInfo {
                     url: url.clone(),
                     alt: alt.clone(),
@@ -636,21 +640,20 @@ mod tests {
     }
 
     #[test]
-    fn image_splits_segments_and_contributes_alt_to_text() {
+    fn image_splits_segments_and_keeps_alt_out_of_text() {
         let doc = parse("before ![alt text](img.png) after");
         let Block::Paragraph(inlines) = &doc.blocks[0] else {
             panic!()
         };
         let walk = walk_inlines(inlines, &doc, None);
-        assert_eq!(walk.text, "before alt text after");
+        // Alt text is tooltip-only: the searchable text is exactly what
+        // the labels show.
+        assert_eq!(walk.text, "before  after");
         assert_eq!(walk.segments.len(), 2);
         assert_eq!(walk.segments[0].markup, "before ");
         assert_eq!(walk.segments[0].char_start, 0);
         assert_eq!(walk.segments[1].markup, " after");
-        assert_eq!(
-            walk.segments[1].char_start,
-            "before alt text".chars().count()
-        );
+        assert_eq!(walk.segments[1].char_start, "before ".chars().count());
     }
 
     #[test]
@@ -689,7 +692,9 @@ mod tests {
         let walk = walk_inlines(inlines, &doc, None);
         assert_eq!(walk.segments.len(), 1);
         assert_eq!(walk.segments[0].markup, "");
-        assert_eq!(walk.text, "alt");
+        assert_eq!(walk.images.len(), 1);
+        assert_eq!(walk.images[0].alt, "alt");
+        assert_eq!(walk.text, "", "alt text must not be searchable");
     }
 
     #[test]
@@ -841,32 +846,22 @@ mod tests {
                 _ => continue,
             };
             let walk = walk_inlines(inlines, &doc, None);
-            let image_alts: Vec<String> = collect_image_alts(inlines);
+            // The walked text is exactly the characters the segments'
+            // markup renders (tags stripped): nothing invisible (like
+            // image alt) is searchable, so find offsets always align.
             let rendered: usize = walk
                 .segments
                 .iter()
                 .map(|s| strip_tags(&s.markup).chars().count())
-                .sum::<usize>()
-                + image_alts.iter().map(|a| a.chars().count()).sum::<usize>();
+                .sum();
             assert_eq!(rendered, walk.text.chars().count());
+            assert!(!walk.text.contains("img"), "alt text must stay out of text");
             assert!(
                 walk.segments
                     .iter()
                     .all(|s| s.char_start <= walk.text.chars().count())
             );
         }
-    }
-
-    fn collect_image_alts(inlines: &[Inline]) -> Vec<String> {
-        let mut out = Vec::new();
-        for inline in inlines {
-            match inline {
-                Inline::Image { alt, .. } => out.push(alt.clone()),
-                Inline::Link { runs, .. } => out.extend(collect_image_alts(runs)),
-                _ => {}
-            }
-        }
-        out
     }
 
     #[test]
@@ -902,6 +897,12 @@ mod tests {
                 _ => {}
             }
         }
-        out
+        // Only the five entities this module emits can appear; unescape
+        // them so character counts compare against the plain text.
+        out.replace("&lt;", "<")
+            .replace("&gt;", ">")
+            .replace("&quot;", "\"")
+            .replace("&apos;", "'")
+            .replace("&amp;", "&")
     }
 }
