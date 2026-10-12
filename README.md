@@ -136,7 +136,7 @@ CLI arg / GtkFileDialog / file-manager activation
         │      find.rs: index + match cycling
         │              │
         ▼              ▼
-   render.rs → widget tree      app.rs: window, TOC, search, states
+   render.rs → widget tree      app/: window, TOC, search, states
         │
  notify + debounce ──► rebuild on change (worker thread → main loop)
 ```
