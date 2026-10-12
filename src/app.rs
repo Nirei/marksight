@@ -83,6 +83,10 @@ struct State {
     scroll_generation: u64,
     render_generation: u64,
     render_complete: bool,
+    /// Startup-notification id of the launch that opened this window,
+    /// consumed the moment the window is presented: presenting with the id
+    /// is what ends the desktop's launch feedback.
+    pending_startup_id: Option<String>,
 }
 
 impl State {
@@ -102,6 +106,7 @@ impl State {
             scroll_generation: 0,
             render_generation: 0,
             render_complete: false,
+            pending_startup_id: None,
         }
     }
 }
@@ -183,31 +188,49 @@ pub fn run() -> glib::ExitCode {
             None => ensure_window(app).present_if_hidden(),
         }
     });
-    app.connect_open(|app, files, _| {
+    app.connect_open(|app, files, hint| {
         timing::mark("open-signal");
-        if files.is_empty() {
-            match alive_windows().last() {
-                Some(existing) => existing.ui.window.present(),
-                None => ensure_window(app).present_if_hidden(),
-            }
-            return;
-        }
-        // One window per file. A second launch of marksight reaches this
-        // point in the primary process over D-Bus; opening a new window (and
-        // presenting it once loaded) is also what ends the launch feedback,
-        // so the file manager's busy cursor and placeholder taskbar icon go
-        // away the moment the document lands.
-        for file in files {
-            match file.path() {
-                Some(path) => {
-                    open_window(app, &path);
-                }
-                None => eprintln!("marksight: cannot open a file without a local path"),
-            }
-        }
+        handle_open(app, files, hint);
     });
     app.connect_startup(|_| timing::mark("startup-signal"));
     app.run()
+}
+
+/// Shared handling for files arriving at the application (from the open
+/// signal, in the primary): every distinct file gets a window of its own,
+/// while a file that is already on screen just gets its window raised.
+///
+/// `hint` is the open signal's hint argument; marksight's forwarding
+/// process uses it to carry the launching desktop's startup-notification
+/// id, so that presenting the window ends the launch feedback (busy cursor,
+/// placeholder taskbar icon) instead of letting it time out.
+#[doc(hidden)]
+pub fn handle_open(app: &gtk::Application, files: &[gtk::gio::File], hint: &str) {
+    if files.is_empty() {
+        match alive_windows().last() {
+            Some(existing) => existing.present_existing(None),
+            None => ensure_window(app).present_if_hidden(),
+        }
+        return;
+    }
+    let startup_id = (!hint.is_empty()).then_some(hint);
+    for file in files {
+        let Some(path) = file.path() else {
+            eprintln!("marksight: cannot open a file without a local path");
+            continue;
+        };
+        match alive_windows()
+            .into_iter()
+            .find(|window| window.shows_path(&path))
+        {
+            Some(existing) => {
+                existing.present_existing(startup_id);
+            }
+            None => {
+                open_window_with_startup(app, &path, startup_id);
+            }
+        }
+    }
 }
 
 /// Entry point of the throwaway forwarding process started by `main` with
@@ -264,14 +287,14 @@ fn forward_to_running_instance(files: &[PathBuf]) -> bool {
         return false;
     }
 
+    let startup_id = std::env::var_os("DESKTOP_STARTUP_ID")
+        .map(|id| id.to_string_lossy().into_owned())
+        .unwrap_or_default();
     let platform = gtk::glib::VariantDict::new(None);
-    if let Some(startup_id) = std::env::var_os("DESKTOP_STARTUP_ID") {
-        platform.insert_value(
-            "desktop-startup-id",
-            &startup_id.to_string_lossy().into_owned().to_variant(),
-        );
+    if !startup_id.is_empty() {
+        platform.insert_value("desktop-startup-id", &startup_id.to_variant());
     }
-    let (method, body) = forward_body(files, &platform);
+    let (method, body) = forward_body(files, &startup_id, &platform);
     // A failed delivery must not be swallowed: report it and report "not
     // forwarded", so the caller falls back to opening the file in a
     // primary of its own instead of quietly doing nothing.
@@ -299,8 +322,13 @@ fn forward_to_running_instance(files: &[PathBuf]) -> bool {
 /// `org.gtk.Application.Open(as uris, s hint, a{sv} platform-data)` and
 /// `Activate(a{sv} platform-data)`. A mismatch is silently rejected by the
 /// D-Bus layer, so getting these wrong means files that never open.
+///
+/// The hint argument carries the launching desktop's startup-notification
+/// id to the primary, which uses it to end the launch feedback when it
+/// presents the window.
 fn forward_body(
     files: &[PathBuf],
+    hint: &str,
     platform: &gtk::glib::VariantDict,
 ) -> (&'static str, gtk::glib::Variant) {
     if files.is_empty() {
@@ -317,7 +345,7 @@ fn forward_body(
             "Open",
             gtk::glib::Variant::tuple_from_iter([
                 uris.to_variant(),
-                String::new().to_variant(),
+                hint.to_variant(),
                 platform.end(),
             ]),
         )
@@ -341,10 +369,34 @@ pub fn ensure_window(app: &gtk::Application) -> Rc<App> {
 /// hidden until its first page (or load error) is ready; presenting it then
 /// completes startup notification for whoever launched the file.
 pub fn open_window(app: &gtk::Application, path: &Path) -> Rc<App> {
+    open_window_with_startup(app, path, None)
+}
+
+fn open_window_with_startup(
+    app: &gtk::Application,
+    path: &Path,
+    startup_id: Option<&str>,
+) -> Rc<App> {
     let window = build(app);
     register_window(&window);
+    if let Some(id) = startup_id.filter(|id| !id.is_empty()) {
+        window
+            .state
+            .borrow_mut()
+            .pending_startup_id
+            .replace(id.to_string());
+    }
     window.open_path(path);
     window
+}
+
+/// True when both paths name the same file, resolving symlinks when the
+/// files exist and falling back to plain equality when they do not.
+fn same_file(a: &Path, b: &Path) -> bool {
+    match (std::fs::canonicalize(a), std::fs::canonicalize(b)) {
+        (Ok(a), Ok(b)) => a == b,
+        _ => a == b,
+    }
 }
 
 fn build(app: &gtk::Application) -> Rc<App> {
@@ -867,9 +919,46 @@ impl App {
     /// a page instead of an empty shell. No-op afterwards: later opens never
     /// raise or focus an already-visible window.
     fn present_if_hidden(&self) {
+        self.finish_startup_notification();
         if !self.ui.window.is_visible() {
             self.ui.window.present();
         }
+    }
+
+    /// Raise and focus this window, ending the launching desktop's startup
+    /// feedback if an id was given.
+    fn present_existing(&self, startup_id: Option<&str>) {
+        if let Some(id) = startup_id.filter(|id| !id.is_empty()) {
+            self.notify_startup_complete(id);
+        }
+        self.ui.window.present();
+    }
+
+    /// True when this window is currently showing `path` (symlinks and
+    /// relative paths resolved away on both sides).
+    fn shows_path(&self, path: &Path) -> bool {
+        let Some(shown) = self.state.borrow().path.clone() else {
+            return false;
+        };
+        same_file(&shown, path)
+    }
+
+    /// Consumes the pending startup-notification id, attaching it to the
+    /// window and telling the desktop the launch finished.
+    fn finish_startup_notification(&self) {
+        let Some(id) = self.state.borrow_mut().pending_startup_id.take() else {
+            return;
+        };
+        self.notify_startup_complete(&id);
+    }
+
+    fn notify_startup_complete(&self, id: &str) {
+        // gtk_window_set_startup_id is the sanctioned way to finish a
+        // startup-notification sequence (the explicit display-level call
+        // was deprecated in GTK 4.10 in its favor): it stores the id on a
+        // hidden window and completes at map time, or completes
+        // immediately for a window that is already on screen.
+        self.ui.window.set_startup_id(id);
     }
 
     pub fn reload_path(self: &Rc<Self>, path: &Path) {
@@ -1341,16 +1430,26 @@ mod forward_tests {
         // D-Bus rejects a mismatched body without ever reaching the
         // application, so this exact type string is a contract.
         let platform = VariantDict::new(None);
-        let (method, body) = forward_body(&[PathBuf::from("/tmp/x.md")], &platform);
+        let (method, body) = forward_body(&[PathBuf::from("/tmp/x.md")], "", &platform);
         assert_eq!(method, "Open");
         assert_eq!(body.type_().to_string(), "(assa{sv})");
+    }
+
+    #[test]
+    fn hint_carries_the_startup_notification_id() {
+        // The forwarding launch's startup id travels in the Open hint, so
+        // the primary can end the desktop's launch feedback on present.
+        let platform = VariantDict::new(None);
+        let (_, body) = forward_body(&[PathBuf::from("/tmp/x.md")], "mystic-12345", &platform);
+        let hint: String = body.child_value(1).get().unwrap();
+        assert_eq!(hint, "mystic-12345");
     }
 
     #[test]
     fn activate_body_matches_gapplication_signature() {
         // org.gtk.Application.Activate(a{sv} platform-data).
         let platform = VariantDict::new(None);
-        let (method, body) = forward_body(&[], &platform);
+        let (method, body) = forward_body(&[], "", &platform);
         assert_eq!(method, "Activate");
         assert_eq!(body.type_().to_string(), "(a{sv})");
     }

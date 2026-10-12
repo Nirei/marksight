@@ -65,6 +65,7 @@ fn gui_smoke_suite() {
     huge_document_within_budget(&mv);
     error_state_on_missing_file(&mv);
     second_file_opens_its_own_window(&mv, &gtk_app);
+    same_file_reuses_its_window(&mv, &gtk_app);
 }
 
 fn welcome_page_visible(mv: &std::rc::Rc<app::App>) {
@@ -434,4 +435,34 @@ fn second_file_opens_its_own_window(mv: &std::rc::Rc<app::App>, gtk_app: &gtk::A
         "closing a window must drop its App"
     );
     assert_eq!(mv.current_doc_len(), first_len);
+}
+
+fn same_file_reuses_its_window(mv: &std::rc::Rc<app::App>, gtk_app: &gtk::Application) {
+    // Opening a file that is already shown raises its window instead of
+    // creating another one.
+    mv.open_path(&fixture("kitchen-sink.md"));
+    assert!(
+        pump_until(Duration::from_secs(5), || mv.visible_page() == "doc"
+            && mv.rendering_complete()),
+        "first window never finished rendering"
+    );
+    assert_eq!(app::window_count(), 1);
+
+    let same = gtk::gio::File::for_path(fixture("kitchen-sink.md"));
+    app::handle_open(gtk_app, &[same], "");
+    pump(Duration::from_millis(300));
+    assert_eq!(
+        app::window_count(),
+        1,
+        "re-opening the same file must reuse the existing window"
+    );
+
+    let other = gtk::gio::File::for_path(fixture("code.md"));
+    app::handle_open(gtk_app, &[other], "");
+    pump(Duration::from_millis(300));
+    assert_eq!(
+        app::window_count(),
+        2,
+        "a different file must still get its own window"
+    );
 }
