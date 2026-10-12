@@ -38,4 +38,4 @@ pub fn init() {
         .expect("marksight: cannot set up the gettext domain");
 }
 
-use gettextrs::{bind_textdomain_codeset, bindtextdomain, setlocale, textdomain, LocaleCategory};
+use gettextrs::{LocaleCategory, bind_textdomain_codeset, bindtextdomain, setlocale, textdomain};

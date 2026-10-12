@@ -164,10 +164,7 @@ fn build(app: &gtk::Application) -> Rc<App> {
 
     let menu = gtk::gio::Menu::new();
     let section = gtk::gio::Menu::new();
-    section.append(
-        Some(gettext("About marksight").as_str()),
-        Some("win.about"),
-    );
+    section.append(Some(gettext("About marksight").as_str()), Some("win.about"));
     section.append(Some(gettext("Quit").as_str()), Some("win.quit"));
     menu.append_section(None, &section);
     let menu_button = gtk::MenuButton::builder()
@@ -177,9 +174,7 @@ fn build(app: &gtk::Application) -> Rc<App> {
     // Icon-only, so it needs an explicit name for assistive technology;
     // GTK does not derive a meaningful one from the icon.
     menu_button.set_tooltip_text(Some(&gettext("Open the main menu")));
-    menu_button.update_property(&[gtk::accessible::Property::Label(&gettext(
-        "Main menu",
-    ))]);
+    menu_button.update_property(&[gtk::accessible::Property::Label(&gettext("Main menu"))]);
 
     let title_label = gtk::Label::new(Some("marksight"));
     title_label.set_css_classes(&["mv-title"]);
