@@ -991,6 +991,11 @@ mod pango_tests {
     }
 
     #[test]
+    // glib's interior-NUL panic is debug-only (translate.rs checks under
+    // cfg!(debug_assertions); release copies the bytes and C truncates at
+    // the NUL), so this pin can only run in debug builds. The deb package
+    // job runs the suite in release mode.
+    #[cfg(debug_assertions)]
     #[should_panic(expected = "GStrInteriorNulError")]
     fn nul_panics_the_c_string_conversion_before_pango_runs() {
         // The reproduced crash: a document containing a raw NUL byte used
