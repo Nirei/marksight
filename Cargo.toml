@@ -17,7 +17,12 @@ gtk = { package = "gtk4", version = "0.11", features = ["v4_10"], optional = tru
 pulldown-cmark = { version = "0.13", default-features = false, features = ["simd"] }
 notify = "8"
 async-channel = "2"
-gettext-rs = { version = "0.7.1", optional = true }
+# gettext-system: use the C library's own gettext (glibc/musl ship it);
+# without it gettext-sys compiles a vendored C gettext, which survives plain
+# cargo builds but breaks inside dpkg-buildpackage's flag environment.
+gettext-rs = { version = "0.7.1", optional = true, default-features = false, features = [
+    "gettext-system",
+] }
 
 [features]
 default = ["ui"]
