@@ -243,13 +243,12 @@ proptest! {
         let index = find::TextIndex::build(&doc);
         let matches = find::find(&index, &needle);
         let active_range = matches.first().map(|m| m.start..m.end);
+        let by_entry = find::by_entry(&matches);
         for (entry, block) in doc.blocks.iter().enumerate() {
             let Some(inlines) = inlines_of(block) else { continue };
-            let ranges = find::entry_ranges(&matches, entry);
-            let active_here = find::active_range(&matches, matches.iter().position(|_| false), entry);
-            let _ = active_here;
+            let ranges = by_entry.get(entry).map(Vec::as_slice).unwrap_or(&[]);
             let hl = markup::Highlight {
-                ranges: &ranges,
+                ranges,
                 active: active_range.as_ref(),
                 hit_color: "#11223344",
                 active_color: "#55667788",

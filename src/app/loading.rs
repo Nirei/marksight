@@ -56,17 +56,14 @@ impl App {
             // A reload of the path already on screen must keep the last
             // good render: if this read fails, show_error treats it as a
             // transient reload failure instead of killing the watcher. A
-            // different path drops the old render — it belongs to the
-            // previous document, not to whatever lands next.
-            let reload = state.path.as_deref() == Some(path);
-            if !reload {
-                state.rendered = None;
-                state.render_complete = false;
+            // different path drops everything derived from the previous
+            // document: it belongs to whatever lands next, not to this one.
+            if state.path.as_deref() == Some(path) {
+                state.reload_started();
+            } else {
+                state.document_changed();
             }
             state.path = Some(path.to_path_buf());
-            state.matches.clear();
-            state.active = None;
-            state.find_pending = None;
         }
         self.start_watcher(path);
         let id = self.id;
@@ -169,8 +166,7 @@ fn show_error(app: &Rc<App>, path: &Path, message: &str) {
     let mut state = app.state.borrow_mut();
     state.path = None;
     state.watcher = None;
-    state.rendered = None;
-    state.render_complete = false;
+    state.document_changed();
     drop(state);
     app.present_if_hidden();
 }
@@ -214,9 +210,12 @@ fn apply_doc(app: &Rc<App>, path: &Path, parsed: Document) {
 
     {
         let mut state = app.state.borrow_mut();
+        // The old render is detached (the streaming root is already in the
+        // viewport) and the stale matches go with it; the needle and match
+        // position survive so a live reload's search continues where it
+        // was. `run_find` re-runs when the stream completes.
         state.rendered = None;
         state.matches.clear();
-        state.active = None;
         state.toc_targets.clear();
         state.render_complete = false;
     }

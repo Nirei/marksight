@@ -54,78 +54,39 @@ pub(super) fn clear_find(app: &Rc<App>) {
     }
 }
 
-pub(super) fn run_find(app: &Rc<App>, needle: &str) {
+/// Applies the current match set to the labels, the counter and the
+/// viewport, and scrolls the active match into view. The one owner of the
+/// label-update flow, shared by the re-search ([`run_find`]) and cycle
+/// ([`cycle_find`]) paths; both persist their state first, so this reads
+/// a single consistent borrow.
+fn present_matches(app: &Rc<App>, active: Option<usize>) {
     let (hit, active_color) = probe_colors(app);
     let state = app.state.borrow();
     let Some(rendered) = &state.rendered else {
         return;
     };
-    let matches = find::find(&state.index, needle);
-    let active = if matches.is_empty() {
-        None
-    } else if needle == state.find_needle && state.find_active.is_some_and(|a| a < matches.len()) {
-        state.find_active
-    } else {
-        find::cycle(&matches, None, true)
-    };
+    // find returns matches sorted by entry: one pass buckets them, and
+    // every label group then reads its slice by index.
+    let by_entry = find::by_entry(&state.matches);
+    let active_match = active.and_then(|a| state.matches.get(a)).copied();
     render::apply_highlight(
         &state.doc,
         rendered,
-        |entry| {
-            (
-                find::entry_ranges(&matches, entry),
-                find::active_range(&matches, active, entry),
-            )
-        },
+        &by_entry,
+        active_match.as_ref(),
         &hit,
         &active_color,
     );
-    let counter = if needle.trim().is_empty() {
+    let counter = if state.find_needle.trim().is_empty() {
         String::new()
     } else {
-        format!("{}/{}", active.map(|a| a + 1).unwrap_or(0), matches.len())
-    };
-    app.ui.match_counter.set_text(&counter);
-    let scroll_target = active
-        .and_then(|a| matches.get(a))
-        .and_then(|m| rendered.first_label(m.entry).cloned());
-    drop(state);
-    if let Some(target) = scroll_target {
-        scroll_to(app, &target);
-    }
-    let mut state = app.state.borrow_mut();
-    state.matches = matches;
-    state.active = active;
-    state.find_needle = needle.to_string();
-    state.find_active = active;
-}
-
-pub(super) fn cycle_find(app: &Rc<App>, forward: bool) {
-    let (hit, active_color) = probe_colors(app);
-    let state = app.state.borrow();
-    let active = find::cycle(&state.matches, state.active, forward);
-    let Some(rendered) = &state.rendered else {
-        return;
-    };
-    render::apply_highlight(
-        &state.doc,
-        rendered,
-        |entry| {
-            (
-                find::entry_ranges(&state.matches, entry),
-                find::active_range(&state.matches, active, entry),
-            )
-        },
-        &hit,
-        &active_color,
-    );
-    if !state.matches.is_empty() {
-        app.ui.match_counter.set_text(&format!(
+        format!(
             "{}/{}",
             active.map(|a| a + 1).unwrap_or(0),
             state.matches.len()
-        ));
-    }
+        )
+    };
+    app.ui.match_counter.set_text(&counter);
     let scroll_target = active
         .and_then(|a| state.matches.get(a))
         .and_then(|m| rendered.first_label(m.entry).cloned());
@@ -133,9 +94,45 @@ pub(super) fn cycle_find(app: &Rc<App>, forward: bool) {
     if let Some(target) = scroll_target {
         scroll_to(app, &target);
     }
-    let mut state = app.state.borrow_mut();
-    state.active = active;
-    state.find_active = active;
+}
+
+pub(super) fn run_find(app: &Rc<App>, needle: &str) {
+    let active = {
+        let state = app.state.borrow();
+        if state.rendered.is_none() {
+            return;
+        }
+        let matches = find::find(&state.index, needle);
+        // Same needle as before (a live reload re-runs the search) and the
+        // old position still in range: continue where the reader was.
+        // Anything else starts at the first match.
+        let active = if matches.is_empty() {
+            None
+        } else if needle == state.find_needle && state.active.is_some_and(|a| a < matches.len()) {
+            state.active
+        } else {
+            find::cycle(&matches, None, true)
+        };
+        drop(state);
+        let mut state = app.state.borrow_mut();
+        state.matches = matches;
+        state.active = active;
+        state.find_needle = needle.to_string();
+        active
+    };
+    present_matches(app, active);
+}
+
+pub(super) fn cycle_find(app: &Rc<App>, forward: bool) {
+    let active = {
+        let state = app.state.borrow();
+        if state.rendered.is_none() {
+            return;
+        }
+        find::cycle(&state.matches, state.active, forward)
+    };
+    present_matches(app, active);
+    app.state.borrow_mut().active = active;
 }
 
 fn probe_colors(app: &Rc<App>) -> (String, String) {

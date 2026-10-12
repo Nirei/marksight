@@ -55,7 +55,6 @@ struct State {
     toc_targets: Vec<gtk::Widget>,
     find_pending: Option<std::time::Instant>,
     find_needle: String,
-    find_active: Option<usize>,
     scroll_generation: u64,
     render_generation: u64,
     render_complete: bool,
@@ -78,12 +77,39 @@ impl State {
             toc_targets: Vec::new(),
             find_pending: None,
             find_needle: String::new(),
-            find_active: None,
             scroll_generation: 0,
             render_generation: 0,
             render_complete: false,
             pending_startup_id: None,
         }
+    }
+
+    /// Forgets everything derived from the document on screen. A different
+    /// document is being loaded: the render, the find state and the scroll
+    /// targets all describe the old document, and none of it may leak into
+    /// the next one (a stale needle or match position would otherwise
+    /// resurface when the next search runs). The path and watcher are
+    /// assigned by the loader around this.
+    fn document_changed(&mut self) {
+        self.rendered = None;
+        self.render_complete = false;
+        self.toc_targets.clear();
+        self.matches.clear();
+        self.active = None;
+        self.find_pending = None;
+        self.find_needle.clear();
+    }
+
+    /// A re-read of the document already on screen (live reload). The last
+    /// good render stays so a failing read reads as transient (see the
+    /// loader's `show_error`); the matches go because they index the
+    /// previous parse. The needle and match position survive, so the
+    /// search that re-runs when the new parse lands continues where the
+    /// reader was; every reader of `active` validates it against the
+    /// fresh match list first.
+    fn reload_started(&mut self) {
+        self.matches.clear();
+        self.find_pending = None;
     }
 }
 

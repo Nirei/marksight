@@ -88,22 +88,19 @@ pub fn cycle(matches: &[Match], active: Option<usize>, forward: bool) -> Option<
     }
 }
 
-pub fn entry_ranges(matches: &[Match], entry: usize) -> Vec<Range<usize>> {
-    matches
-        .iter()
-        .filter(|m| m.entry == entry)
-        .map(|m| m.start..m.end)
-        .collect()
-}
-
-pub fn active_range(
-    matches: &[Match],
-    active: Option<usize>,
-    entry: usize,
-) -> Option<Range<usize>> {
-    let active = active?;
-    let m = matches.get(active)?;
-    (m.entry == entry).then_some(m.start..m.end)
+/// Match ranges bucketed per entry, ready for
+/// [`crate::render::apply_highlight`]. `find` returns matches sorted by
+/// entry, so one pass buckets them all; each label group then reads its
+/// slice by index instead of rescanning every match.
+pub fn by_entry(matches: &[Match]) -> Vec<Vec<Range<usize>>> {
+    let mut out: Vec<Vec<Range<usize>>> = Vec::new();
+    for m in matches {
+        if out.len() <= m.entry {
+            out.resize_with(m.entry + 1, Vec::new);
+        }
+        out[m.entry].push(m.start..m.end);
+    }
+    out
 }
 
 #[cfg(test)]
@@ -253,11 +250,12 @@ mod tests {
     }
 
     #[test]
-    fn entry_ranges_filter_by_entry() {
+    fn by_entry_buckets_matches_per_entry() {
         let matches = find(&index("ab ab\n\ncd ab"), "ab");
-        assert_eq!(entry_ranges(&matches, 0), vec![0..2, 3..5]);
-        assert_eq!(entry_ranges(&matches, 1), vec![3..5]);
-        assert_eq!(entry_ranges(&matches, 7), vec![]);
+        assert_eq!(by_entry(&matches), vec![vec![0..2, 3..5], vec![3..5]]);
+        // An entry with no matches, and no matches at all, read as empty.
+        assert_eq!(by_entry(&matches).get(7), None);
+        assert!(by_entry(&find(&index("x"), "zz")).is_empty());
     }
 
     #[test]
@@ -293,12 +291,4 @@ mod tests {
         );
     }
 
-    #[test]
-    fn active_range_only_for_active_entry() {
-        let matches = find(&index("ab\n\ncd ab"), "ab");
-        assert_eq!(active_range(&matches, Some(1), 0), None);
-        assert_eq!(active_range(&matches, Some(1), 1), Some(3..5));
-        assert_eq!(active_range(&matches, None, 1), None);
-        assert_eq!(active_range(&matches, Some(9), 1), None);
-    }
 }

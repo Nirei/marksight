@@ -119,7 +119,7 @@ fn replace_unsafe(c: char) -> char {
 }
 
 struct Walker<'a> {
-    footnotes: &'a Document,
+    footnotes: Option<&'a Document>,
     hl: Option<Highlight<'a>>,
     text: String,
     segments: Vec<Segment>,
@@ -131,7 +131,7 @@ struct Walker<'a> {
 }
 
 impl<'a> Walker<'a> {
-    fn new(footnotes: &'a Document, hl: Option<Highlight<'a>>) -> Self {
+    fn new(footnotes: Option<&'a Document>, hl: Option<Highlight<'a>>) -> Self {
         Walker {
             footnotes,
             hl,
@@ -279,7 +279,7 @@ impl<'a> Walker<'a> {
     }
 
     fn footnote_ref(&mut self, label: &str) {
-        match self.footnotes.footnote_index(label) {
+        match self.footnotes.and_then(|doc| doc.footnote_index(label)) {
             Some(index) => {
                 let number = index + 1;
                 let anchor = format!("#fn-{number}");
@@ -295,7 +295,7 @@ impl<'a> Walker<'a> {
 }
 
 pub fn walk_inlines(inlines: &[Inline], footnotes: &Document, hl: Option<Highlight<'_>>) -> Walk {
-    let mut walker = Walker::new(footnotes, hl);
+    let mut walker = Walker::new(Some(footnotes), hl);
     walk_into(inlines, &mut walker);
     walker.boundary(false);
     Walk {
@@ -347,8 +347,7 @@ fn walk_into(inlines: &[Inline], walker: &mut Walker<'_>) {
 }
 
 pub fn code_markup(code: &str, hl: Option<Highlight<'_>>) -> String {
-    let footnotes = Document::default();
-    let mut walker = Walker::new(&footnotes, hl);
+    let mut walker = Walker::new(None, hl);
     walker.emit(code, None);
     walker.boundary(false);
     walker.segments.pop().map(|s| s.markup).unwrap_or_default()

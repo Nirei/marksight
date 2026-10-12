@@ -17,6 +17,7 @@ use gtk::prelude::*;
 use gtk::{self as gtk};
 
 use crate::doc::{Alignment, Block, BlockQuoteKind, Document, Inline};
+use crate::find::Match;
 use crate::markup::{self, Highlight};
 
 pub type LinkHandler = Rc<dyn Fn(&str) -> bool>;
@@ -87,27 +88,36 @@ impl RenderedDoc {
     }
 }
 
+/// Re-applies markup with `matches_by_entry` (from [`crate::find::by_entry`])
+/// highlighted. Groups whose entry has no ranges get their base markup
+/// back, so a cleared search restores every label.
 pub fn apply_highlight(
     doc: &Document,
     rendered: &RenderedDoc,
-    ranges_of: impl Fn(usize) -> (Vec<std::ops::Range<usize>>, Option<std::ops::Range<usize>>),
+    matches_by_entry: &[Vec<std::ops::Range<usize>>],
+    active: Option<&Match>,
     hit: &str,
-    active: &str,
+    active_color: &str,
 ) {
     for group in &rendered.groups {
-        let (ranges, active_range) = ranges_of(group.entry);
-        if ranges.is_empty() && active_range.is_none() {
+        let ranges = matches_by_entry
+            .get(group.entry)
+            .map(Vec::as_slice)
+            .unwrap_or(&[]);
+        let active_here = active
+            .filter(|m| m.entry == group.entry)
+            .map(|m| m.start..m.end);
+        if ranges.is_empty() && active_here.is_none() {
             for slot in &group.labels {
                 update_slot(slot, slot.base_markup.clone());
             }
             continue;
         }
-        let owned_active = active_range;
         let hl = Highlight {
-            ranges: &ranges,
-            active: owned_active.as_ref(),
+            ranges,
+            active: active_here.as_ref(),
             hit_color: hit,
-            active_color: active,
+            active_color,
         };
         match &group.source {
             Source::Code(code) => {
@@ -139,25 +149,7 @@ fn update_slot(slot: &LabelSlot, markup: String) {
     }
 }
 
-pub fn render(ctx: &RenderCtx<'_>) -> RenderedDoc {
-    let column = gtk::Box::new(gtk::Orientation::Vertical, 12);
-    column.set_css_classes(&["mv-content"]);
-    let mut groups = Vec::new();
-    render_blocks(&ctx.doc.blocks, &column, ctx, &mut groups, 1);
-    render_footnotes(ctx, &column, &mut groups);
-    for (entry, group) in groups.iter_mut().enumerate() {
-        group.entry = entry;
-    }
-    RenderedDoc {
-        root: column.upcast(),
-        groups,
-    }
-}
-
-/// Resumable document renderer: builds the same tree [`render`] would, but
-/// one unit at a time (a top-level block, then a footnote row) under a time
-/// budget, so the window can map with the first slice of content and the
-/// rest streams in while the loop stays responsive.
+/// Resumable document renderer: builds the widget tree one unit at a time
 pub struct ChunkedRenderer {
     doc: Document,
     base_dir: Option<PathBuf>,
@@ -342,16 +334,6 @@ impl ChunkedRenderer {
         }
         *last_chars = 0;
         true
-    }
-}
-
-fn render_footnotes(ctx: &RenderCtx<'_>, column: &gtk::Box, groups: &mut Vec<LabelGroup>) {
-    if ctx.doc.footnotes.is_empty() {
-        return;
-    }
-    start_footnotes(column);
-    for (index, footnote) in ctx.doc.footnotes.iter().enumerate() {
-        render_footnote_row(index, footnote, column, ctx, groups);
     }
 }
 

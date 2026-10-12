@@ -44,8 +44,9 @@ fuzz_target!(|data: &[u8]| {
     }
 
     let active = matches.first().map(|m| m.start..m.end);
+    let by_entry = find::by_entry(&matches);
     for (entry, block) in parsed.blocks.iter().enumerate() {
-        let ranges = find::entry_ranges(&matches, entry);
+        let ranges = by_entry.get(entry).map(Vec::as_slice).unwrap_or(&[]);
         let Some(inlines) = inline_content(block) else {
             continue;
         };
