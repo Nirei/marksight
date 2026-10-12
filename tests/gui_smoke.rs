@@ -62,6 +62,7 @@ fn gui_smoke_suite() {
     pathological_documents_do_not_crash(&mv);
     image_keeps_space_in_tall_document(&mv);
     live_reload_replaces_content(&mv);
+    live_reload_survives_save_via_rename(&mv);
     huge_document_within_budget(&mv);
     error_state_on_missing_file(&mv);
     second_file_opens_its_own_window(&mv, &gtk_app);
@@ -353,6 +354,45 @@ fn live_reload_replaces_content(mv: &std::rc::Rc<app::App>) {
         pump_until(Duration::from_secs(10), || mv.current_doc_len() == 6),
         "watcher-driven reload never changed the document (len={})",
         mv.current_doc_len()
+    );
+    let _ = std::fs::remove_file(&path);
+}
+
+fn live_reload_survives_save_via_rename(mv: &std::rc::Rc<app::App>) {
+    // Regression: a reload triggered by the Remove half of an editor's
+    // save-via-rename used to hit show_error, which dropped the watcher
+    // and the path, permanently killing live reload. The remove and the
+    // recreate below sit further apart than one debounce window, so the
+    // watcher really does observe a missing file.
+    let path = std::env::temp_dir().join("marksight-smoke-rename.md");
+    std::fs::write(&path, "# first\n\none paragraph\n").unwrap();
+    mv.open_path(&path);
+    assert!(
+        pump_until(Duration::from_secs(5), || mv.current_doc_len() == 2),
+        "first rename document never applied (len={})",
+        mv.current_doc_len()
+    );
+
+    std::fs::remove_file(&path).unwrap();
+    std::thread::sleep(Duration::from_millis(400));
+    // While the file is gone the last good render must stay on screen.
+    assert_eq!(
+        mv.visible_page(),
+        "doc",
+        "a transiently missing file must not leave the document page"
+    );
+    assert_eq!(mv.current_doc_len(), 2, "last good render must be kept");
+
+    std::fs::write(&path, "# second\n\n1\n\n2\n\n3\n\n4\n\n5\n").unwrap();
+    assert!(
+        pump_until(Duration::from_secs(10), || mv.current_doc_len() == 6),
+        "watcher died on a transient remove: document never updated (len={})",
+        mv.current_doc_len()
+    );
+    assert_eq!(
+        mv.visible_page(),
+        "doc",
+        "reload after recreate must stay on the document page"
     );
     let _ = std::fs::remove_file(&path);
 }

@@ -18,6 +18,14 @@ use notify::{Event, EventKind, RecursiveMode, Watcher as _};
 
 pub const DEBOUNCE_MS: Duration = Duration::from_millis(150);
 
+/// Extra debounce windows to wait when the file is missing at the end of a
+/// quiet period. An editor's save-via-rename delivers the old file's Remove
+/// and the new file's Create as separate events, sometimes further apart
+/// than one window; firing into the gap would reload a missing file. A few
+/// extra windows (~1 s total) bridge real saves, while a genuinely deleted
+/// file still fires one final reload after the retries run out.
+const MISSING_RETRIES: usize = 8;
+
 pub struct FileWatcher {
     _watcher: notify::RecommendedWatcher,
     _receiver: glib::JoinHandle<()>,
@@ -58,6 +66,7 @@ impl FileWatcher {
         // in one pass; only when a whole quiet window passes with nothing
         // new does the callback fire. Draining in bulk keeps an event storm
         // to one trailing window instead of one window per queued event.
+        let watched = path.to_path_buf();
         let receiver = glib::spawn_future_local(async move {
             loop {
                 if rx.recv().await.is_err() {
@@ -75,6 +84,21 @@ impl FileWatcher {
                     if !more {
                         break;
                     }
+                }
+                // The quiet window may have closed while the file was
+                // briefly missing (the Remove half of a save-via-rename):
+                // wait a few more windows for it to reappear instead of
+                // firing a reload that cannot succeed. Events arriving
+                // meanwhile are drained — the reload below reads whatever
+                // is on disk when it finally fires.
+                let mut retries = 0;
+                while !watched.is_file() && retries < MISSING_RETRIES {
+                    retries += 1;
+                    glib::timeout_future(DEBOUNCE_MS).await;
+                    if rx.is_closed() {
+                        return;
+                    }
+                    while rx.try_recv().is_ok() {}
                 }
                 changed();
             }

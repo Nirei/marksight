@@ -1018,6 +1018,16 @@ impl App {
         timing::mark("open_path");
         {
             let mut state = self.state.borrow_mut();
+            // A reload of the path already on screen must keep the last
+            // good render: if this read fails, show_error treats it as a
+            // transient reload failure instead of killing the watcher. A
+            // different path drops the old render — it belongs to the
+            // previous document, not to whatever lands next.
+            let reload = state.path.as_deref() == Some(path);
+            if !reload {
+                state.rendered = None;
+                state.render_complete = false;
+            }
             state.path = Some(path.to_path_buf());
             state.matches.clear();
             state.active = None;
@@ -1062,6 +1072,16 @@ fn show_error(app: &Rc<App>, path: &Path, message: &str) {
     if app.state.borrow().path.as_deref() != Some(path) {
         return;
     }
+    // A reload that fails while this document is already on screen is
+    // almost always an editor's save-via-rename: the Remove half of the
+    // rename briefly leaves the file missing. Killing the watcher and the
+    // path here (the first-open behavior) permanently broke live reload.
+    // Instead keep everything and re-read on the next event; the missing
+    // retry in watch.rs usually bridges the gap without this path at all.
+    if app.state.borrow().rendered.is_some() {
+        eprintln!("marksight: reload failed, keeping the displayed document: {message}");
+        return;
+    }
     app.ui
         .error_label
         .set_text(&format!("{}\n\n{}", path.display(), message));
@@ -1074,6 +1094,7 @@ fn show_error(app: &Rc<App>, path: &Path, message: &str) {
     state.watcher = None;
     state.rendered = None;
     state.render_complete = false;
+    drop(state);
     app.present_if_hidden();
 }
 
