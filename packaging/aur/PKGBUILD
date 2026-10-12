@@ -7,7 +7,7 @@ arch=('x86_64')
 url='https://github.com/cinzatech/marksight'
 license=('MIT' 'Apache-2.0')
 depends=('gtk4' 'gcc-libs')
-makedepends=('cargo')
+makedepends=('cargo' 'gettext')
 checkdepends=('xvfb' 'metacity')
 source=("${url}/archive/refs/tags/v${pkgver}.tar.gz")
 sha256sums=('REPLACE_AT_RELEASE')
@@ -44,4 +44,9 @@ package() {
   install -Dm644 data/marksight.1 "${pkgdir}/usr/share/man/man1/marksight.1"
   install -Dm644 LICENSE-MIT "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE-MIT"
   install -Dm644 LICENSE-APACHE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE-APACHE"
+  for po in po/*.po; do
+    [ -f "$po" ] || continue
+    install -d "${pkgdir}/usr/share/locale/$(basename "$po" .po)/LC_MESSAGES"
+    msgfmt -o "${pkgdir}/usr/share/locale/$(basename "$po" .po)/LC_MESSAGES/marksight.mo" "$po"
+  done
 }

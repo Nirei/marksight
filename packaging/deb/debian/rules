@@ -21,3 +21,8 @@ override_dh_auto_install:
 	install -Dm644 data/io.github.cinzatech.marksight.metainfo.xml debian/marksight/usr/share/metainfo/io.github.cinzatech.marksight.metainfo.xml
 	install -Dm644 data/icons/hicolor/scalable/apps/io.github.cinzatech.marksight.svg debian/marksight/usr/share/icons/hicolor/scalable/apps/io.github.cinzatech.marksight.svg
 	install -Dm644 data/marksight.1 debian/marksight/usr/share/man/man1/marksight.1
+	for po in po/*.po; do \
+		test -f "$$po" || continue; \
+		install -d debian/marksight/usr/share/locale/$$(basename $${po} .po)/LC_MESSAGES; \
+		msgfmt -o debian/marksight/usr/share/locale/$$(basename $${po} .po)/LC_MESSAGES/marksight.mo $${po}; \
+	done

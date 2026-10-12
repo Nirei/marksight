@@ -31,12 +31,16 @@ modules:
   - name: marksight
     buildsystem: simple
     build-commands:
-      - cargo --offline build --release
+      - LOCALEDIR=/app/share/locale cargo --offline build --release
       - install -Dm755 target/release/marksight /app/bin/marksight
       - install -Dm644 data/io.github.cinzatech.marksight.desktop /app/share/applications/io.github.cinzatech.marksight.desktop
       - install -Dm644 data/io.github.cinzatech.marksight.metainfo.xml /app/share/metainfo/io.github.cinzatech.marksight.metainfo.xml
       - install -Dm644 data/icons/hicolor/scalable/apps/io.github.cinzatech.marksight.svg /app/share/icons/hicolor/scalable/apps/io.github.cinzatech.marksight.svg
       - install -Dm644 data/marksight.1 /app/share/man/man1/marksight.1
+      - >-
+        for po in po/*.po; do [ -f "$po" ] || continue;
+        install -d "/app/share/locale/$(basename "$po" .po)/LC_MESSAGES";
+        msgfmt -o "/app/share/locale/$(basename "$po" .po)/LC_MESSAGES/marksight.mo" "$po"; done
     sources:
       - type: archive
         url: https://github.com/cinzatech/marksight/archive/refs/tags/v0.1.0.tar.gz

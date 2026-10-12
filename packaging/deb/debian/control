@@ -8,6 +8,7 @@ Rules-Requires-Root: no
 # dh-cargo's hardcoded /usr/share/cargo/bin/cargo is deliberately not used.
 Build-Depends:
  debhelper-compat (= 13),
+ gettext,
  libgtk-4-dev (>= 4.10),
 Standards-Version: 4.7.0
 Vcs-Git: https://github.com/cinzatech/marksight.git
