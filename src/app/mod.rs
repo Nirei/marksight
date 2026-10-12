@@ -13,10 +13,10 @@
 //! so startup never paints an empty frame, and presenting the new window is
 //! what completes startup notification.
 //!
-//! The shell is split by concern: [`window`] builds windows and owns the
-//! live-window registry, [`loading`] opens and streams documents, [`search`]
-//! drives find-in-document, [`links`] handles link activation and in-document
-//! scrolling, and [`ipc`] forwards second launches to the primary over D-Bus.
+//! The shell is split by concern: `window` builds windows and owns the
+//! live-window registry, `loading` opens and streams documents, `search`
+//! drives find-in-document, `links` handles link activation and in-document
+//! scrolling, and `ipc` forwards second launches to the primary over D-Bus.
 
 mod ipc;
 mod links;
