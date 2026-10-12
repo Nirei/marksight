@@ -153,8 +153,10 @@ fuzz targets link against.
 - Raw HTML events from the parser are dropped at the model boundary
 - Links open through `GtkUriLauncher` (portal-aware); `#fn-N` anchors scroll
   internally and never launch anything
-- Local images resolve relative to the document; remote images are never
-  fetched (fallback placeholder)
+- Local images resolve relative to the document and are only loaded when
+  the resolved path stays inside the document's own directory: absolute
+  paths, `..` escapes, `file:` URLs and symlinks pointing outside are not
+  loaded (fallback placeholder). Remote images are never fetched
 - Fuzz targets assert the markup invariants on arbitrary input
 
 ## Performance budgets

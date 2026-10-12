@@ -698,27 +698,19 @@ fn render_inlines(
 }
 
 fn picture_for(image: &markup::ImageInfo, ctx: &RenderCtx<'_>) -> gtk::Widget {
-    if let Some(path) = local_image_path(&image.url, ctx.base_dir) {
-        // Bound the bytes handed to the decoder: decoding still runs on the
-        // main thread, so an unbounded input could stall the loop and
-        // expand without limit in memory.
-        let size_ok = std::fs::metadata(&path)
-            .map(|m| m.len() <= IMAGE_MAX_FILE_BYTES)
-            .unwrap_or(false);
-        if size_ok {
-            if let Ok(texture) = gdk::Texture::from_filename(&path) {
-                let picture = gtk::Picture::for_paintable(&texture);
-                picture.set_css_classes(&["mv-image"]);
-                // Fill + ScaleDown: fill the column width so the allocated width
-                // is meaningful, scale down to fit, never upscale.
-                picture.set_content_fit(gtk::ContentFit::ScaleDown);
-                picture.set_halign(gtk::Align::Fill);
-                picture.set_can_shrink(true);
-                if !image.alt.is_empty() {
-                    picture.set_tooltip_text(Some(&image.alt));
-                }
-                return picture.upcast::<gtk::Widget>();
+    if let Some(path) = decodable_image_path(&image.url, ctx.base_dir) {
+        if let Ok(texture) = gdk::Texture::from_filename(&path) {
+            let picture = gtk::Picture::for_paintable(&texture);
+            picture.set_css_classes(&["mv-image"]);
+            // Fill + ScaleDown: fill the column width so the allocated width
+            // is meaningful, scale down to fit, never upscale.
+            picture.set_content_fit(gtk::ContentFit::ScaleDown);
+            picture.set_halign(gtk::Align::Fill);
+            picture.set_can_shrink(true);
+            if !image.alt.is_empty() {
+                picture.set_tooltip_text(Some(&image.alt));
             }
+            return picture.upcast::<gtk::Widget>();
         }
     }
     let fallback = gtk::Label::new(Some(&format!("🖼 {}: {}", image.alt, image.url)));
@@ -729,15 +721,40 @@ fn picture_for(image: &markup::ImageInfo, ctx: &RenderCtx<'_>) -> gtk::Widget {
     fallback.upcast::<gtk::Widget>()
 }
 
+/// A confined path that is a regular file within the size bound, ready to
+/// hand to the decoder. Everything else (missing file, FIFO or device node,
+/// oversized input) yields None so [`picture_for`] shows the fallback label.
+fn decodable_image_path(url: &str, base_dir: Option<&Path>) -> Option<PathBuf> {
+    let path = local_image_path(url, base_dir)?;
+    let metadata = std::fs::metadata(&path).ok()?;
+    // `is_file`, not just a size read: metadata on a FIFO or device node
+    // succeeds, and reading such a path can block or diverge (a FIFO waits
+    // for a writer, /dev/zero never ends), which would stall the main
+    // thread that decodes the image.
+    (metadata.is_file() && metadata.len() <= IMAGE_MAX_FILE_BYTES).then_some(path)
+}
+
+/// Resolves an image URL to a local path inside the document's directory,
+/// or None when the URL must not be loaded from disk:
+///
+/// - URLs with a scheme (`https://…`, and `file:` in any spelling, with or
+///   without `//`) and `data:` URLs are never loaded;
+/// - absolute paths are never loaded;
+/// - a relative path is resolved against the document directory, and the
+///   canonicalized result (symlinks and `..` included) must stay inside the
+///   canonicalized document directory, so a hostile document cannot point
+///   the viewer at files elsewhere on the machine.
 fn local_image_path(url: &str, base_dir: Option<&Path>) -> Option<PathBuf> {
-    if url.contains("://") || url.starts_with("data:") {
+    if url.contains("://") || url.starts_with("data:") || url.starts_with("file:") {
         return None;
     }
-    let path = PathBuf::from(url);
-    if path.is_absolute() {
-        return Some(path);
+    let relative = PathBuf::from(url);
+    if relative.is_absolute() {
+        return None;
     }
-    base_dir.map(|base| base.join(path))
+    let base = base_dir?.canonicalize().ok()?;
+    let resolved = base.join(relative).canonicalize().ok()?;
+    resolved.starts_with(&base).then_some(resolved)
 }
 
 fn plain_label(text: &str, css: &[&str]) -> gtk::Label {
@@ -755,5 +772,139 @@ fn link_activate(handler: &LinkHandler, uri: &str) -> glib::Propagation {
         glib::Propagation::Stop
     } else {
         glib::Propagation::Proceed
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{decodable_image_path, local_image_path};
+    use std::fs;
+    use std::path::{Path, PathBuf};
+    use std::process::Command;
+
+    /// A scratch directory holding a document and an in-tree image.
+    struct Scratch {
+        dir: PathBuf,
+        outside: PathBuf,
+    }
+
+    impl Scratch {
+        fn new(tag: &str) -> Self {
+            let dir =
+                std::env::temp_dir().join(format!("marksight-img-{}-{}", tag, std::process::id()));
+            let outside = std::env::temp_dir().join(format!(
+                "marksight-img-{}-{}-outside",
+                tag,
+                std::process::id()
+            ));
+            fs::create_dir_all(&dir).unwrap();
+            fs::write(dir.join("img.png"), b"png").unwrap();
+            fs::write(dir.join("sub.png"), b"png").unwrap();
+            fs::write(&outside, b"secret").unwrap();
+            Scratch { dir, outside }
+        }
+
+        fn base(&self) -> &Path {
+            &self.dir
+        }
+    }
+
+    impl Drop for Scratch {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.dir);
+            let _ = fs::remove_file(&self.outside);
+        }
+    }
+
+    #[test]
+    fn in_tree_images_load() {
+        let s = Scratch::new("intree");
+        assert_eq!(
+            local_image_path("img.png", Some(s.base())),
+            Some(s.dir.join("img.png"))
+        );
+        assert_eq!(
+            local_image_path("./img.png", Some(s.base())),
+            Some(s.dir.join("img.png"))
+        );
+        assert!(decodable_image_path("img.png", Some(s.base())).is_some());
+    }
+
+    #[test]
+    fn parent_escape_is_rejected() {
+        let s = Scratch::new("escape");
+        assert_eq!(local_image_path("../img.png", Some(s.base())), None);
+        assert_eq!(local_image_path("a/../../img.png", Some(s.base())), None);
+        assert!(decodable_image_path("../img.png", Some(s.base())).is_none());
+    }
+
+    #[test]
+    fn absolute_paths_are_rejected() {
+        let s = Scratch::new("absolute");
+        assert_eq!(local_image_path("/etc/passwd", Some(s.base())), None);
+        assert_eq!(local_image_path("/etc/passwd", None), None);
+        assert!(decodable_image_path("/etc/passwd", Some(s.base())).is_none());
+    }
+
+    #[test]
+    fn file_urls_with_and_without_slashes_are_rejected() {
+        let s = Scratch::new("fileurl");
+        // `file:` with // is a scheme URL; without // it used to fall
+        // through to the path joiner and could smuggle an absolute path.
+        assert_eq!(local_image_path("file:///etc/passwd", Some(s.base())), None);
+        assert_eq!(local_image_path("file:/etc/passwd", Some(s.base())), None);
+        assert_eq!(local_image_path("file:etc/passwd", Some(s.base())), None);
+    }
+
+    #[test]
+    fn remote_and_data_urls_are_rejected() {
+        let s = Scratch::new("remote");
+        assert_eq!(
+            local_image_path("https://example.com/a.png", Some(s.base())),
+            None
+        );
+        assert_eq!(
+            local_image_path("data:image/png;base64,AAAA", Some(s.base())),
+            None
+        );
+    }
+
+    #[test]
+    fn symlink_escape_is_rejected_but_in_tree_symlink_loads() {
+        let s = Scratch::new("symlink");
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(&s.outside, s.dir.join("escape.png")).unwrap();
+        #[cfg(unix)]
+        std::os::unix::fs::symlink("img.png", s.dir.join("alias.png")).unwrap();
+        #[cfg(unix)]
+        {
+            assert_eq!(local_image_path("escape.png", Some(s.base())), None);
+            assert_eq!(
+                local_image_path("alias.png", Some(s.base())),
+                Some(s.dir.join("img.png"))
+            );
+        }
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn fifo_inside_the_document_dir_is_not_decodable() {
+        // Confinement alone lets a FIFO through (realpath resolves it), so
+        // the is_file() check is what keeps the decoder from opening it —
+        // and blocking the main thread — on a readerless FIFO.
+        let s = Scratch::new("fifo");
+        let fifo = s.dir.join("pipe.png");
+        Command::new("mkfifo").arg(&fifo).status().unwrap();
+        assert!(local_image_path("pipe.png", Some(s.base())).is_some());
+        assert!(decodable_image_path("pipe.png", Some(s.base())).is_none());
+    }
+
+    #[test]
+    fn missing_image_and_missing_base_dir_are_rejected() {
+        let s = Scratch::new("missing");
+        assert_eq!(local_image_path("nope.png", Some(s.base())), None);
+        let absent = std::env::temp_dir().join(format!("marksight-absent-{}", std::process::id()));
+        assert_eq!(local_image_path("img.png", Some(&absent)), None);
+        assert_eq!(local_image_path("img.png", None), None);
     }
 }
