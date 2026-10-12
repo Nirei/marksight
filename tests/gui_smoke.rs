@@ -65,6 +65,7 @@ fn gui_smoke_suite() {
     image_keeps_space_in_tall_document(&mv);
     live_reload_replaces_content(&mv);
     live_reload_survives_save_via_rename(&mv);
+    deep_nesting_opens_within_budget(&mv);
     huge_document_within_budget(&mv);
     error_state_on_missing_file(&mv);
     oversize_file_shows_size_error(&mv);
@@ -491,6 +492,38 @@ fn live_reload_survives_save_via_rename(mv: &std::rc::Rc<app::App>) {
         "doc",
         "reload after recreate must stay on the document page"
     );
+    let _ = std::fs::remove_file(&path);
+}
+
+fn deep_nesting_opens_within_budget(mv: &std::rc::Rc<app::App>) {
+    // MAX_CONTAINER_DEPTH is 256, so a document at the cap is legal input:
+    // it must open, stream and finish within a sane budget. Quotes at the
+    // cap plus 64 nested lists. Runs before the huge-document test on
+    // purpose: replacing a viewport child whose tree holds ten thousand
+    // widgets costs seconds of teardown on the main loop, and this test
+    // must measure the deep document, not the previous one's disposal.
+    let quotes = "> ".repeat(256) + "bottom of the quotes\n";
+    let mut lists = String::new();
+    for depth in 0..64 {
+        lists.push_str(&"  ".repeat(depth));
+        lists.push_str(&format!("- item {depth}\n"));
+    }
+    let markdown = format!("{quotes}\n\n{lists}");
+    let path = std::env::temp_dir().join("marksight-smoke-deep.md");
+    std::fs::write(&path, markdown).unwrap();
+    let started = Instant::now();
+    mv.open_path(&path);
+    assert!(
+        pump_until(Duration::from_secs(10), || mv.visible_page() == "doc"
+            && mv.rendering_complete()),
+        "deeply nested document never finished rendering"
+    );
+    let elapsed = started.elapsed();
+    assert!(
+        elapsed < Duration::from_secs(5),
+        "256-deep document took {elapsed:?} to open, above the budget"
+    );
+    assert!(mv.current_doc_len() >= 2, "deep content must be present");
     let _ = std::fs::remove_file(&path);
 }
 
