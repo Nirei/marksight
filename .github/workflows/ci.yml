@@ -79,6 +79,10 @@ jobs:
           '
         env:
           GSK_RENDERER: cairo
+          # No accessibility bus exists on the test display; without this,
+          # GTK's bridge retries it for over a second before giving up,
+          # eating most of the suite's timing margins.
+          GTK_A11Y: none
 
   budget:
     name: release build + size budget
