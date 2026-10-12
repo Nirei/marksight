@@ -1,0 +1,137 @@
+# Portuguese translations for marksight package.
+# Copyright (C) 2026 THE marksight'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the marksight package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: marksight 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-12 16:22+0200\n"
+"PO-Revision-Date: 2026-10-12 14:30+0000\n"
+"Last-Translator: marksight contributors\n"
+"Language-Team: none\n"
+"Language: pt_BR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/app/loading.rs:130
+msgid "not a regular file"
+msgstr "não é um arquivo comum"
+
+#: src/app/loading.rs:135
+msgid "file too large: {size} byte (the limit is {limit} bytes)"
+msgid_plural "file too large: {size} bytes (the limit is {limit} bytes)"
+msgstr[0] "arquivo grande demais: {size} byte (o limite é de {limit} bytes)"
+msgstr[1] "arquivo grande demais: {size} bytes (o limite é de {limit} bytes)"
+
+#: src/app/loading.rs:155
+msgid "file not found"
+msgstr "arquivo não encontrado"
+
+#: src/app/loading.rs:156
+msgid "permission denied"
+msgstr "permissão negada"
+
+#: src/app/loading.rs:334
+msgid "(untitled heading)"
+msgstr "(seção sem título)"
+
+#: src/app/loading.rs:339
+msgid "Jump to {heading}"
+msgstr "Ir para {heading}"
+
+#: src/app/search.rs:101
+msgid "{position} of {total} match"
+msgid_plural "{position} of {total} matches"
+msgstr[0] "{position} de {total} ocorrência"
+msgstr[1] "{position} de {total} ocorrências"
+
+#: src/app/window.rs:157
+msgid "Open a markdown file (Ctrl+O)"
+msgstr "Abra um arquivo markdown (Ctrl+O)"
+
+#: src/app/window.rs:159
+msgid "Open markdown file"
+msgstr "Abrir arquivo markdown"
+
+#: src/app/window.rs:162
+msgid "Contents"
+msgstr "Índice"
+
+#: src/app/window.rs:163
+msgid "Toggle the table of contents (F9)"
+msgstr "Alternar exibição do índice (F9)"
+
+#: src/app/window.rs:167
+msgid "About marksight"
+msgstr "Sobre o marksight"
+
+#: src/app/window.rs:168
+msgid "Quit"
+msgstr "Sair"
+
+#: src/app/window.rs:176
+msgid "Open the main menu"
+msgstr "Abra o menu principal"
+
+#: src/app/window.rs:177
+msgid "Main menu"
+msgstr "Menu principal"
+
+#: src/app/window.rs:239
+msgid "Find in document"
+msgstr "Localizar no documento"
+
+#: src/app/window.rs:503
+msgid "A minimal, theme-native markdown viewer"
+msgstr "Um visualizador de markdown minimalista e integrado ao tema do sistema"
+
+#: src/app/window.rs:521
+msgid "Open a Markdown file to view it here"
+msgstr "Abra um arquivo Markdown para visualizá-lo aqui"
+
+#: src/app/window.rs:523
+msgid "Open a file…"
+msgstr "Abrir um arquivo…"
+
+#: src/app/window.rs:527
+msgid "Ctrl+O open · F9 contents · Ctrl+F find · live reload on save"
+msgstr "Ctrl+O abrir · F9 índice · Ctrl+F localizar · recarregar ao salvar"
+
+#: src/app/window.rs:541
+msgid "Could not open file"
+msgstr "Não foi possível abrir o arquivo"
+
+#: src/app/window.rs:547
+msgid "Open another file…"
+msgstr "Abrir outro arquivo…"
+
+#: src/render.rs:345
+msgid "Footnotes"
+msgstr "Notas de rodapé"
+
+#: src/render.rs:582
+msgid "Note"
+msgstr "Observação"
+
+#: src/render.rs:583
+msgid "Tip"
+msgstr "Dica"
+
+#: src/render.rs:584
+msgid "Important"
+msgstr "Importante"
+
+#: src/render.rs:585
+msgid "Warning"
+msgstr "Aviso"
+
+#: src/render.rs:586
+msgid "Caution"
+msgstr "Cuidado"
+
+#: src/render.rs:703
+msgid "🖼 {alt}: {url}"
+msgstr "🖼 {alt}: {url}"

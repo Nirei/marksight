@@ -1,0 +1,145 @@
+# Arabic translations for marksight package.
+# Copyright (C) 2026 THE marksight'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the marksight package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: marksight 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-12 16:22+0200\n"
+"PO-Revision-Date: 2026-10-12 14:31+0000\n"
+"Last-Translator: marksight contributors\n"
+"Language-Team: none\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 ? 4 : 5);\n"
+
+#: src/app/loading.rs:130
+msgid "not a regular file"
+msgstr "ليس ملفًا عاديًا"
+
+#: src/app/loading.rs:135
+msgid "file too large: {size} byte (the limit is {limit} bytes)"
+msgid_plural "file too large: {size} bytes (the limit is {limit} bytes)"
+msgstr[0] "الملف كبير جدًا: {size} بايت (الحد {limit} بايت)"
+msgstr[1] "الملف كبير جدًا: {size} بايت (الحد {limit} بايت)"
+msgstr[2] "الملف كبير جدًا: {size} بايتان (الحد {limit} بايت)"
+msgstr[3] "الملف كبير جدًا: {size} بايتات (الحد {limit} بايت)"
+msgstr[4] "الملف كبير جدًا: {size} بايتًا (الحد {limit} بايت)"
+msgstr[5] "الملف كبير جدًا: {size} بايت (الحد {limit} بايت)"
+
+#: src/app/loading.rs:155
+msgid "file not found"
+msgstr "الملف غير موجود"
+
+#: src/app/loading.rs:156
+msgid "permission denied"
+msgstr "تم رفض الإذن"
+
+#: src/app/loading.rs:334
+msgid "(untitled heading)"
+msgstr "(بلا عنوان)"
+
+#: src/app/loading.rs:339
+msgid "Jump to {heading}"
+msgstr "الانتقال إلى {heading}"
+
+#: src/app/search.rs:101
+msgid "{position} of {total} match"
+msgid_plural "{position} of {total} matches"
+msgstr[0] "{position} من {total} مطابقة"
+msgstr[1] "{position} من {total} مطابقة"
+msgstr[2] "{position} من {total} مطابقتان"
+msgstr[3] "{position} من {total} مطابقات"
+msgstr[4] "{position} من {total} مطابقةً"
+msgstr[5] "{position} من {total} مطابقة"
+
+#: src/app/window.rs:157
+msgid "Open a markdown file (Ctrl+O)"
+msgstr "افتح ملف Markdown (Ctrl+O)"
+
+#: src/app/window.rs:159
+msgid "Open markdown file"
+msgstr "افتح ملف Markdown"
+
+#: src/app/window.rs:162
+msgid "Contents"
+msgstr "المحتويات"
+
+#: src/app/window.rs:163
+msgid "Toggle the table of contents (F9)"
+msgstr "إظهار جدول المحتويات أو إخفاؤه (F9)"
+
+#: src/app/window.rs:167
+msgid "About marksight"
+msgstr "عن marksight"
+
+#: src/app/window.rs:168
+msgid "Quit"
+msgstr "إنهاء"
+
+#: src/app/window.rs:176
+msgid "Open the main menu"
+msgstr "افتح القائمة الرئيسية"
+
+#: src/app/window.rs:177
+msgid "Main menu"
+msgstr "القائمة الرئيسية"
+
+#: src/app/window.rs:239
+msgid "Find in document"
+msgstr "ابحث في المستند"
+
+#: src/app/window.rs:503
+msgid "A minimal, theme-native markdown viewer"
+msgstr "عارض Markdown بسيط يتبع سمة النظام"
+
+#: src/app/window.rs:521
+msgid "Open a Markdown file to view it here"
+msgstr "افتح ملف Markdown لعرضه هنا"
+
+#: src/app/window.rs:523
+msgid "Open a file…"
+msgstr "افتح ملفًا…"
+
+#: src/app/window.rs:527
+msgid "Ctrl+O open · F9 contents · Ctrl+F find · live reload on save"
+msgstr "Ctrl+O فتح · F9 المحتويات · Ctrl+F بحث · إعادة تحميل تلقائية عند الحفظ"
+
+#: src/app/window.rs:541
+msgid "Could not open file"
+msgstr "تعذر فتح الملف"
+
+#: src/app/window.rs:547
+msgid "Open another file…"
+msgstr "افتح ملفًا آخر…"
+
+#: src/render.rs:345
+msgid "Footnotes"
+msgstr "الحواشي السفلية"
+
+#: src/render.rs:582
+msgid "Note"
+msgstr "ملاحظة"
+
+#: src/render.rs:583
+msgid "Tip"
+msgstr "نصيحة"
+
+#: src/render.rs:584
+msgid "Important"
+msgstr "هام"
+
+#: src/render.rs:585
+msgid "Warning"
+msgstr "تحذير"
+
+#: src/render.rs:586
+msgid "Caution"
+msgstr "احتراس"
+
+#: src/render.rs:703
+msgid "🖼 {alt}: {url}"
+msgstr "🖼 {alt}: {url}"
