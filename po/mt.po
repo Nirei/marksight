@@ -1,0 +1,141 @@
+# Maltese translations for marksight package.
+# Copyright (C) 2026 THE marksight'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the marksight package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: marksight 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-12 16:22+0200\n"
+"PO-Revision-Date: 2026-10-12 16:13+0000\n"
+"Last-Translator: marksight contributors\n"
+"Language-Team: none\n"
+"Language: mt\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n==1 ? 0 : n==0 || (n%100>1 && n%100<11) ? 1 : (n%100>10 && n%100<20) ? 2 : 3);\n"
+
+#: src/app/loading.rs:130
+msgid "not a regular file"
+msgstr "mhux fajl regolari"
+
+#: src/app/loading.rs:135
+msgid "file too large: {size} byte (the limit is {limit} bytes)"
+msgid_plural "file too large: {size} bytes (the limit is {limit} bytes)"
+msgstr[0] "il-fajl kbir wisq: {size} bajt (il-limitu huwa {limit} bajt)"
+msgstr[1] "il-fajl kbir wisq: {size} bajts (il-limitu huwa {limit} bajt)"
+msgstr[2] "il-fajl kbir wisq: {size}-il bajt (il-limitu huwa {limit} bajt)"
+msgstr[3] "il-fajl kbir wisq: {size} bajt (il-limitu huwa {limit} bajt)"
+
+#: src/app/loading.rs:155
+msgid "file not found"
+msgstr "il-fajl ma nstabx"
+
+#: src/app/loading.rs:156
+msgid "permission denied"
+msgstr "permissjoni miċħuda"
+
+#: src/app/loading.rs:334
+msgid "(untitled heading)"
+msgstr "(intestatura bla titolu)"
+
+#: src/app/loading.rs:339
+msgid "Jump to {heading}"
+msgstr "Aqbeż għal {heading}"
+
+#: src/app/search.rs:101
+msgid "{position} of {total} match"
+msgid_plural "{position} of {total} matches"
+msgstr[0] "{position} minn {total} riżultat"
+msgstr[1] "{position} minn {total} riżultati"
+msgstr[2] "{position} minn {total}-il riżultat"
+msgstr[3] "{position} minn {total} riżultat"
+
+#: src/app/window.rs:157
+msgid "Open a markdown file (Ctrl+O)"
+msgstr "Iftaħ fajl markdown (Ctrl+O)"
+
+#: src/app/window.rs:159
+msgid "Open markdown file"
+msgstr "Iftaħ fajl markdown"
+
+#: src/app/window.rs:162
+msgid "Contents"
+msgstr "Indiċi"
+
+#: src/app/window.rs:163
+msgid "Toggle the table of contents (F9)"
+msgstr "Uri jew aħbi l-indiċi (F9)"
+
+#: src/app/window.rs:167
+msgid "About marksight"
+msgstr "Dwar marksight"
+
+#: src/app/window.rs:168
+msgid "Quit"
+msgstr "Oħroġ"
+
+#: src/app/window.rs:176
+msgid "Open the main menu"
+msgstr "Iftaħ il-menu prinċipali"
+
+#: src/app/window.rs:177
+msgid "Main menu"
+msgstr "Menu prinċipali"
+
+#: src/app/window.rs:239
+msgid "Find in document"
+msgstr "Fittex fid-dokument"
+
+#: src/app/window.rs:503
+msgid "A minimal, theme-native markdown viewer"
+msgstr "Viżwer minimu ta' markdown li jsegwi t-tema tas-sistema"
+
+#: src/app/window.rs:521
+msgid "Open a Markdown file to view it here"
+msgstr "Iftaħ fajl Markdown biex tarah hawn"
+
+#: src/app/window.rs:523
+msgid "Open a file…"
+msgstr "Iftaħ fajl…"
+
+#: src/app/window.rs:527
+msgid "Ctrl+O open · F9 contents · Ctrl+F find · live reload on save"
+msgstr "Ctrl+O ftuħ · F9 indiċi · Ctrl+F tfittxija · aġġornament f'ħin reali meta tissejvja"
+
+#: src/app/window.rs:541
+msgid "Could not open file"
+msgstr "Ma setgħetx tiftaħ il-fajl"
+
+#: src/app/window.rs:547
+msgid "Open another file…"
+msgstr "Iftaħ fajl ieħor…"
+
+#: src/render.rs:345
+msgid "Footnotes"
+msgstr "Noti fil-qiegħ"
+
+#: src/render.rs:582
+msgid "Note"
+msgstr "Nota"
+
+#: src/render.rs:583
+msgid "Tip"
+msgstr "Parir"
+
+#: src/render.rs:584
+msgid "Important"
+msgstr "Importanti"
+
+#: src/render.rs:585
+msgid "Warning"
+msgstr "Twissija"
+
+#: src/render.rs:586
+msgid "Caution"
+msgstr "Attenzjoni"
+
+#: src/render.rs:703
+msgid "🖼 {alt}: {url}"
+msgstr "🖼 {alt}: {url}"

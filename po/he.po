@@ -1,0 +1,137 @@
+# Hebrew translations for marksight package.
+# Copyright (C) 2026 THE marksight'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the marksight package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: marksight 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-12 16:22+0200\n"
+"PO-Revision-Date: 2026-10-12 16:05+0000\n"
+"Last-Translator: marksight contributors\n"
+"Language-Team: none\n"
+"Language: he\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: src/app/loading.rs:130
+msgid "not a regular file"
+msgstr "זהו אינו קובץ רגיל"
+
+#: src/app/loading.rs:135
+msgid "file too large: {size} byte (the limit is {limit} bytes)"
+msgid_plural "file too large: {size} bytes (the limit is {limit} bytes)"
+msgstr[0] "הקובץ גדול מדי: {size} בייט (המגבלה היא {limit} בייט)"
+msgstr[1] "הקובץ גדול מדי: {size} בייט (המגבלה היא {limit} בייט)"
+
+#: src/app/loading.rs:155
+msgid "file not found"
+msgstr "הקובץ לא נמצא"
+
+#: src/app/loading.rs:156
+msgid "permission denied"
+msgstr "ההרשאה נדחתה"
+
+#: src/app/loading.rs:334
+msgid "(untitled heading)"
+msgstr "(כותרת ללא שם)"
+
+#: src/app/loading.rs:339
+msgid "Jump to {heading}"
+msgstr "מעבר אל {heading}"
+
+#: src/app/search.rs:101
+msgid "{position} of {total} match"
+msgid_plural "{position} of {total} matches"
+msgstr[0] "התאמה {position} מתוך {total}"
+msgstr[1] "התאמה {position} מתוך {total}"
+
+#: src/app/window.rs:157
+msgid "Open a markdown file (Ctrl+O)"
+msgstr "פתיחת קובץ markdown (Ctrl+O)"
+
+#: src/app/window.rs:159
+msgid "Open markdown file"
+msgstr "פתיחת קובץ markdown"
+
+#: src/app/window.rs:162
+msgid "Contents"
+msgstr "תוכן עניינים"
+
+#: src/app/window.rs:163
+msgid "Toggle the table of contents (F9)"
+msgstr "הצגה או הסתרה של תוכן העניינים (F9)"
+
+#: src/app/window.rs:167
+msgid "About marksight"
+msgstr "אודות marksight"
+
+#: src/app/window.rs:168
+msgid "Quit"
+msgstr "יציאה"
+
+#: src/app/window.rs:176
+msgid "Open the main menu"
+msgstr "פתיחת התפריט הראשי"
+
+#: src/app/window.rs:177
+msgid "Main menu"
+msgstr "תפריט ראשי"
+
+#: src/app/window.rs:239
+msgid "Find in document"
+msgstr "חיפוש במסמך"
+
+#: src/app/window.rs:503
+msgid "A minimal, theme-native markdown viewer"
+msgstr "מציג markdown מינימלי בעיצוב ערכת הנושא של המערכת"
+
+#: src/app/window.rs:521
+msgid "Open a Markdown file to view it here"
+msgstr "פתח קובץ Markdown כדי לצפות בו כאן"
+
+#: src/app/window.rs:523
+msgid "Open a file…"
+msgstr "פתיחת קובץ…"
+
+#: src/app/window.rs:527
+msgid "Ctrl+O open · F9 contents · Ctrl+F find · live reload on save"
+msgstr "Ctrl+O פתיחה · F9 תוכן עניינים · Ctrl+F חיפוש · טעינה מחדש אוטומטית בשמירה"
+
+#: src/app/window.rs:541
+msgid "Could not open file"
+msgstr "לא ניתן לפתוח את הקובץ"
+
+#: src/app/window.rs:547
+msgid "Open another file…"
+msgstr "פתיחת קובץ אחר…"
+
+#: src/render.rs:345
+msgid "Footnotes"
+msgstr "הערות שוליים"
+
+#: src/render.rs:582
+msgid "Note"
+msgstr "הערה"
+
+#: src/render.rs:583
+msgid "Tip"
+msgstr "טיפ"
+
+#: src/render.rs:584
+msgid "Important"
+msgstr "חשוב"
+
+#: src/render.rs:585
+msgid "Warning"
+msgstr "אזהרה"
+
+#: src/render.rs:586
+msgid "Caution"
+msgstr "זהירות"
+
+#: src/render.rs:703
+msgid "🖼 {alt}: {url}"
+msgstr "🖼 {alt}: {url}"

@@ -1,0 +1,150 @@
+# Scottish Gaelic translations for marksight package.
+# Copyright (C) 2026 THE marksight'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the marksight package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: marksight 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-12 16:22+0200\n"
+"PO-Revision-Date: 2026-10-12 16:19+0000\n"
+"Last-Translator: marksight contributors\n"
+"Language-Team: none\n"
+"Language: gd\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n==1 || n==11) ? 0 : (n==2 || n==12) ? 1 : (n>=3 && n<=10 || n>=13 && n<=19) ? 2 : 3;\n"
+
+#: src/app/loading.rs:130
+msgid "not a regular file"
+msgstr "chan e faidhle àbhaisteach a th’ ann"
+
+#: src/app/loading.rs:135
+msgid "file too large: {size} byte (the limit is {limit} bytes)"
+msgid_plural "file too large: {size} bytes (the limit is {limit} bytes)"
+msgstr[0] ""
+"Tha am faidhle ro mhòr: tha {size} bhaidht ann (’s e {limit} baidht a’ "
+"chrìoch)"
+msgstr[1] ""
+"Tha am faidhle ro mhòr: tha {size} bhaidht ann (’s e {limit} baidht a’ "
+"chrìoch)"
+msgstr[2] ""
+"Tha am faidhle ro mhòr: tha {size} baidht ann (’s e {limit} baidht a’ "
+"chrìoch)"
+msgstr[3] ""
+"Tha am faidhle ro mhòr: tha {size} baidht ann (’s e {limit} baidht a’ "
+"chrìoch)"
+
+#: src/app/loading.rs:155
+msgid "file not found"
+msgstr "cha deach am faidhle a lorg"
+
+#: src/app/loading.rs:156
+msgid "permission denied"
+msgstr "chaidh an cead a dhiùltadh"
+
+#: src/app/loading.rs:334
+msgid "(untitled heading)"
+msgstr "(ceann-sgrìobhadh gun tiotal)"
+
+#: src/app/loading.rs:339
+msgid "Jump to {heading}"
+msgstr "Geàrr leum gu {heading}"
+
+#: src/app/search.rs:101
+msgid "{position} of {total} match"
+msgid_plural "{position} of {total} matches"
+msgstr[0] "{position} à {total} mhaids"
+msgstr[1] "{position} à {total} mhaids"
+msgstr[2] "{position} à {total} maids"
+msgstr[3] "{position} à {total} maids"
+
+#: src/app/window.rs:157
+msgid "Open a markdown file (Ctrl+O)"
+msgstr "Fosgail faidhle Markdown (Ctrl+O)"
+
+#: src/app/window.rs:159
+msgid "Open markdown file"
+msgstr "Fosgail faidhle Markdown"
+
+#: src/app/window.rs:162
+msgid "Contents"
+msgstr "Clàr-innse"
+
+#: src/app/window.rs:163
+msgid "Toggle the table of contents (F9)"
+msgstr "Tionndaidh an clàr-innse (F9)"
+
+#: src/app/window.rs:167
+msgid "About marksight"
+msgstr "Mu dhèidhinn marksight"
+
+#: src/app/window.rs:168
+msgid "Quit"
+msgstr "Èalaich"
+
+#: src/app/window.rs:176
+msgid "Open the main menu"
+msgstr "Fosgail a’ phrìomh chlàr-taice"
+
+#: src/app/window.rs:177
+msgid "Main menu"
+msgstr "A’ phrìomh chlàr-taice"
+
+#: src/app/window.rs:239
+msgid "Find in document"
+msgstr "Lorg san sgrìobhainn"
+
+#: src/app/window.rs:503
+msgid "A minimal, theme-native markdown viewer"
+msgstr "Sealladair Markdown sìmplidh a ghabhas ri coltas an tèama"
+
+#: src/app/window.rs:521
+msgid "Open a Markdown file to view it here"
+msgstr "Fosgail faidhle Markdown gus a shealltainn an-seo"
+
+#: src/app/window.rs:523
+msgid "Open a file…"
+msgstr "Fosgail faidhle…"
+
+#: src/app/window.rs:527
+msgid "Ctrl+O open · F9 contents · Ctrl+F find · live reload on save"
+msgstr ""
+"Ctrl+O fosgail · F9 clàr-innse · Ctrl+F lorg · ath-luchdadh beò air sàbhaladh"
+
+#: src/app/window.rs:541
+msgid "Could not open file"
+msgstr "Cha deach am faidhle fhosgladh"
+
+#: src/app/window.rs:547
+msgid "Open another file…"
+msgstr "Fosgail faidhle eile…"
+
+#: src/render.rs:345
+msgid "Footnotes"
+msgstr "Nòtaichean-brath"
+
+#: src/render.rs:582
+msgid "Note"
+msgstr "Nòta"
+
+#: src/render.rs:583
+msgid "Tip"
+msgstr "Comhairle"
+
+#: src/render.rs:584
+msgid "Important"
+msgstr "Cudromach"
+
+#: src/render.rs:585
+msgid "Warning"
+msgstr "Rabhadh"
+
+#: src/render.rs:586
+msgid "Caution"
+msgstr "Thoir an aire"
+
+#: src/render.rs:703
+msgid "🖼 {alt}: {url}"
+msgstr "🖼 {alt}: {url}"

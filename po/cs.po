@@ -1,0 +1,139 @@
+# Czech translations for marksight package.
+# Copyright (C) 2026 THE marksight'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the marksight package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: marksight 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-12 16:22+0200\n"
+"PO-Revision-Date: 2026-10-12 16:06+0000\n"
+"Last-Translator: marksight contributors\n"
+"Language-Team: none\n"
+"Language: cs\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
+
+#: src/app/loading.rs:130
+msgid "not a regular file"
+msgstr "není obyčejný soubor"
+
+#: src/app/loading.rs:135
+msgid "file too large: {size} byte (the limit is {limit} bytes)"
+msgid_plural "file too large: {size} bytes (the limit is {limit} bytes)"
+msgstr[0] "soubor je příliš velký: {size} bajt (limit je {limit} bajtů)"
+msgstr[1] "soubor je příliš velký: {size} bajty (limit je {limit} bajtů)"
+msgstr[2] "soubor je příliš velký: {size} bajtů (limit je {limit} bajtů)"
+
+#: src/app/loading.rs:155
+msgid "file not found"
+msgstr "soubor nebyl nalezen"
+
+#: src/app/loading.rs:156
+msgid "permission denied"
+msgstr "přístup odepřen"
+
+#: src/app/loading.rs:334
+msgid "(untitled heading)"
+msgstr "(nadpis bez názvu)"
+
+#: src/app/loading.rs:339
+msgid "Jump to {heading}"
+msgstr "Přejít na {heading}"
+
+#: src/app/search.rs:101
+msgid "{position} of {total} match"
+msgid_plural "{position} of {total} matches"
+msgstr[0] "{position} z {total} shoda"
+msgstr[1] "{position} z {total} shody"
+msgstr[2] "{position} z {total} shod"
+
+#: src/app/window.rs:157
+msgid "Open a markdown file (Ctrl+O)"
+msgstr "Otevřít soubor Markdown (Ctrl+O)"
+
+#: src/app/window.rs:159
+msgid "Open markdown file"
+msgstr "Otevřít soubor Markdown"
+
+#: src/app/window.rs:162
+msgid "Contents"
+msgstr "Obsah"
+
+#: src/app/window.rs:163
+msgid "Toggle the table of contents (F9)"
+msgstr "Zobrazit nebo skrýt obsah (F9)"
+
+#: src/app/window.rs:167
+msgid "About marksight"
+msgstr "O aplikaci marksight"
+
+#: src/app/window.rs:168
+msgid "Quit"
+msgstr "Ukončit"
+
+#: src/app/window.rs:176
+msgid "Open the main menu"
+msgstr "Otevřít hlavní nabídku"
+
+#: src/app/window.rs:177
+msgid "Main menu"
+msgstr "Hlavní nabídka"
+
+#: src/app/window.rs:239
+msgid "Find in document"
+msgstr "Hledat v dokumentu"
+
+#: src/app/window.rs:503
+msgid "A minimal, theme-native markdown viewer"
+msgstr "Minimální prohlížeč Markdownu v systémovém motivu"
+
+#: src/app/window.rs:521
+msgid "Open a Markdown file to view it here"
+msgstr "Otevřete soubor Markdown a zobrazte si ho zde"
+
+#: src/app/window.rs:523
+msgid "Open a file…"
+msgstr "Otevřít soubor…"
+
+#: src/app/window.rs:527
+msgid "Ctrl+O open · F9 contents · Ctrl+F find · live reload on save"
+msgstr "Ctrl+O otevřít · F9 obsah · Ctrl+F hledat · automatické znovunačtení po uložení"
+
+#: src/app/window.rs:541
+msgid "Could not open file"
+msgstr "Soubor se nepodařilo otevřít"
+
+#: src/app/window.rs:547
+msgid "Open another file…"
+msgstr "Otevřít jiný soubor…"
+
+#: src/render.rs:345
+msgid "Footnotes"
+msgstr "Poznámky pod čarou"
+
+#: src/render.rs:582
+msgid "Note"
+msgstr "Poznámka"
+
+#: src/render.rs:583
+msgid "Tip"
+msgstr "Tip"
+
+#: src/render.rs:584
+msgid "Important"
+msgstr "Důležité"
+
+#: src/render.rs:585
+msgid "Warning"
+msgstr "Varování"
+
+#: src/render.rs:586
+msgid "Caution"
+msgstr "Pozor"
+
+#: src/render.rs:703
+msgid "🖼 {alt}: {url}"
+msgstr "🖼 {alt}: {url}"
