@@ -60,6 +60,10 @@ fn main() -> ExitCode {
             }
         }
     }
+    // Pick up the user's locale and select the message domain before any
+    // translatable string is shown. The forwarder and CLI paths print
+    // untranslated diagnostics by design.
+    marksight::i18n::init();
     marksight::app::run().into()
 }
 

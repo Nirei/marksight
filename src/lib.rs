@@ -14,6 +14,9 @@ pub mod timing;
 pub mod app;
 
 #[cfg(feature = "ui")]
+pub mod i18n;
+
+#[cfg(feature = "ui")]
 pub mod render;
 
 #[cfg(feature = "ui")]

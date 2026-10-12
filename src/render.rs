@@ -18,6 +18,7 @@ use gtk::{self as gtk};
 
 use crate::doc::{Alignment, Block, BlockQuoteKind, Document, Inline};
 use crate::find::Match;
+use crate::i18n::gettext;
 use crate::markup::{self, Highlight};
 
 pub type LinkHandler = Rc<dyn Fn(&str) -> bool>;
@@ -341,7 +342,7 @@ fn start_footnotes(column: &gtk::Box) {
     let separator = gtk::Separator::new(gtk::Orientation::Horizontal);
     separator.set_css_classes(&["mv-rule"]);
     column.append(&separator);
-    column.append(&plain_label("Footnotes", &["mv-h2"]));
+    column.append(&plain_label(&gettext("Footnotes"), &["mv-h2"]));
 }
 
 fn render_footnote_row(
@@ -491,7 +492,7 @@ fn render_block(
             let box_ = gtk::Box::new(gtk::Orientation::Vertical, 6);
             box_.set_css_classes(&[css]);
             box_.set_hexpand(true);
-            box_.append(&plain_label(alert_title(*alert), &["mv-alert-title"]));
+            box_.append(&plain_label(&alert_title(*alert), &["mv-alert-title"]));
             render_blocks(blocks, &box_, ctx, groups, depth + 1);
             into.append(&box_);
         }
@@ -569,13 +570,13 @@ fn alignment_xalign(align: Alignment) -> f32 {
     }
 }
 
-fn alert_title(kind: BlockQuoteKind) -> &'static str {
+fn alert_title(kind: BlockQuoteKind) -> String {
     match kind {
-        BlockQuoteKind::Note => "Note",
-        BlockQuoteKind::Tip => "Tip",
-        BlockQuoteKind::Important => "Important",
-        BlockQuoteKind::Warning => "Warning",
-        BlockQuoteKind::Caution => "Caution",
+        BlockQuoteKind::Note => gettext("Note"),
+        BlockQuoteKind::Tip => gettext("Tip"),
+        BlockQuoteKind::Important => gettext("Important"),
+        BlockQuoteKind::Warning => gettext("Warning"),
+        BlockQuoteKind::Caution => gettext("Caution"),
     }
 }
 
@@ -692,7 +693,10 @@ fn picture_for(image: &markup::ImageInfo, ctx: &RenderCtx<'_>) -> gtk::Widget {
             return picture.upcast::<gtk::Widget>();
         }
     }
-    let fallback = gtk::Label::new(Some(&format!("🖼 {}: {}", image.alt, image.url)));
+    let text = gettext("🖼 {alt}: {url}")
+        .replace("{alt}", &image.alt)
+        .replace("{url}", &image.url);
+    let fallback = gtk::Label::new(Some(&text));
     fallback.set_css_classes(&["mv-image-fallback"]);
     fallback.set_xalign(0.0);
     fallback.set_wrap(true);

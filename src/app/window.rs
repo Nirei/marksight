@@ -19,6 +19,7 @@ use gtk::{self as gtk};
 use super::links::scroll_to;
 use super::search::{clear_find, cycle_find, install_find_poll, schedule_find};
 use super::{APP_ID, App, State};
+use crate::i18n::gettext;
 use crate::timing;
 
 const CSS: &str = include_str!("../../resources/marksight.css");
@@ -153,16 +154,21 @@ fn build(app: &gtk::Application) -> Rc<App> {
     window.connect_realize(|_| timing::mark("window-realized"));
 
     let open_button = gtk::Button::from_icon_name("document-open-symbolic");
-    open_button.set_tooltip_text(Some("Open a markdown file (Ctrl+O)"));
-    open_button.update_property(&[gtk::accessible::Property::Label("Open markdown file")]);
+    open_button.set_tooltip_text(Some(&gettext("Open a markdown file (Ctrl+O)")));
+    open_button.update_property(&[gtk::accessible::Property::Label(&gettext(
+        "Open markdown file",
+    ))]);
 
-    let toc_button = gtk::ToggleButton::with_label("Contents");
-    toc_button.set_tooltip_text(Some("Toggle the table of contents (F9)"));
+    let toc_button = gtk::ToggleButton::with_label(&gettext("Contents"));
+    toc_button.set_tooltip_text(Some(&gettext("Toggle the table of contents (F9)")));
 
     let menu = gtk::gio::Menu::new();
     let section = gtk::gio::Menu::new();
-    section.append(Some("About marksight"), Some("win.about"));
-    section.append(Some("Quit"), Some("win.quit"));
+    section.append(
+        Some(gettext("About marksight").as_str()),
+        Some("win.about"),
+    );
+    section.append(Some(gettext("Quit").as_str()), Some("win.quit"));
     menu.append_section(None, &section);
     let menu_button = gtk::MenuButton::builder()
         .icon_name("open-menu-symbolic")
@@ -229,7 +235,7 @@ fn build(app: &gtk::Application) -> Rc<App> {
 
     let search_entry = gtk::SearchEntry::new();
     search_entry.set_hexpand(true);
-    search_entry.set_placeholder_text(Some("Find in document"));
+    search_entry.set_placeholder_text(Some(&gettext("Find in document")));
     let match_counter = gtk::Label::new(None);
     match_counter.set_css_classes(&["mv-match-counter"]);
     let search_box = gtk::Box::new(gtk::Orientation::Horizontal, 8);
@@ -493,7 +499,7 @@ fn show_about(window: &gtk::ApplicationWindow) {
     about.set_modal(true);
     about.set_program_name(Some("marksight"));
     about.set_version(Some(env!("CARGO_PKG_VERSION")));
-    about.set_comments(Some("A minimal, theme-native markdown viewer"));
+    about.set_comments(Some(&gettext("A minimal, theme-native markdown viewer")));
     about.set_license(Some(
         "Licensed under either of MIT or Apache-2.0, at your option.",
     ));
@@ -511,14 +517,14 @@ fn welcome_page() -> gtk::Widget {
     column.set_halign(gtk::Align::Center);
     let title = gtk::Label::new(Some("marksight"));
     title.set_css_classes(&["mv-welcome-title"]);
-    let subtitle = gtk::Label::new(Some("Open a Markdown file to view it here"));
+    let subtitle = gtk::Label::new(Some(&gettext("Open a Markdown file to view it here")));
     subtitle.set_css_classes(&["mv-welcome-subtitle"]);
-    let button = gtk::Button::with_label("Open a file…");
+    let button = gtk::Button::with_label(&gettext("Open a file…"));
     button.set_css_classes(&["mv-welcome-button"]);
     button.set_action_name(Some("win.open"));
-    let hint = gtk::Label::new(Some(
+    let hint = gtk::Label::new(Some(&gettext(
         "Ctrl+O open · F9 contents · Ctrl+F find · live reload on save",
-    ));
+    )));
     hint.set_css_classes(&["mv-welcome-hint"]);
     column.append(&title);
     column.append(&subtitle);
@@ -531,13 +537,13 @@ fn error_page() -> (gtk::Widget, gtk::Label) {
     let column = gtk::Box::new(gtk::Orientation::Vertical, 12);
     column.set_valign(gtk::Align::Center);
     column.set_halign(gtk::Align::Center);
-    let title = gtk::Label::new(Some("Could not open file"));
+    let title = gtk::Label::new(Some(&gettext("Could not open file")));
     title.set_css_classes(&["mv-welcome-title"]);
     let label = gtk::Label::new(None);
     label.set_css_classes(&["mv-welcome-subtitle"]);
     label.set_wrap(true);
     label.set_selectable(true);
-    let button = gtk::Button::with_label("Open another file…");
+    let button = gtk::Button::with_label(&gettext("Open another file…"));
     button.set_css_classes(&["mv-welcome-button"]);
     button.set_action_name(Some("win.open"));
     column.append(&title);

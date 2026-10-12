@@ -1,0 +1,5 @@
+# Sources holding translatable UI strings; used by the xgettext command
+# in po/README.md.
+src/app/loading.rs
+src/app/window.rs
+src/render.rs

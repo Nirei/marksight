@@ -17,6 +17,7 @@ use super::search::run_find;
 use super::window::window_by_id;
 use crate::doc::{self, Document, TocEntry};
 use crate::find::TextIndex;
+use crate::i18n::{gettext, ngettext};
 use crate::markup;
 use crate::render;
 use crate::timing;
@@ -124,22 +125,37 @@ impl App {
 /// between the stat and the read.
 fn read_bounded(path: &Path) -> Result<Vec<u8>, String> {
     use std::io::Read;
-    let metadata = std::fs::metadata(path).map_err(|err| err.to_string())?;
+    let metadata = std::fs::metadata(path).map_err(|err| io_error_message(&err))?;
     if !metadata.is_file() {
-        return Err("not a regular file".to_string());
+        return Err(gettext("not a regular file"));
     }
     let len = metadata.len();
     if len > MAX_DOC_BYTES {
-        return Err(format!(
-            "file too large: {len} bytes (limit {MAX_DOC_BYTES} bytes)"
-        ));
+        return Err(ngettext(
+            "file too large: {size} byte (the limit is {limit} bytes)",
+            "file too large: {size} bytes (the limit is {limit} bytes)",
+            u32::try_from(len).unwrap_or(u32::MAX),
+        )
+        .replace("{size}", &len.to_string())
+        .replace("{limit}", &MAX_DOC_BYTES.to_string()));
     }
-    let file = std::fs::File::open(path).map_err(|err| err.to_string())?;
+    let file = std::fs::File::open(path).map_err(|err| io_error_message(&err))?;
     let mut bytes = Vec::with_capacity(len.min(4 << 20) as usize);
     file.take(MAX_DOC_BYTES)
         .read_to_end(&mut bytes)
-        .map_err(|err| err.to_string())?;
+        .map_err(|err| io_error_message(&err))?;
     Ok(bytes)
+}
+
+/// The two I/O failures users can actually act on, as short translatable
+/// messages; anything else keeps the raw error text, which the error page
+/// shows and the reload path logs.
+fn io_error_message(err: &std::io::Error) -> String {
+    match err.kind() {
+        std::io::ErrorKind::NotFound => gettext("file not found"),
+        std::io::ErrorKind::PermissionDenied => gettext("permission denied"),
+        _ => err.to_string(),
+    }
 }
 
 fn show_error(app: &Rc<App>, path: &Path, message: &str) {
@@ -315,14 +331,13 @@ fn rebuild_toc(app: &Rc<App>, rows: &[(u8, String)]) {
         row.set_child(Some(&label));
         row.set_css_classes(&["mv-toc-item"]);
         let row_text = if text.is_empty() {
-            "(untitled heading)".to_owned()
+            gettext("(untitled heading)")
         } else {
             text.clone()
         };
-        row.update_property(&[gtk::accessible::Property::Label(&format!(
-            "Jump to {}",
-            row_text
-        ))]);
+        row.update_property(&[gtk::accessible::Property::Label(
+            &gettext("Jump to {heading}").replace("{heading}", &row_text),
+        )]);
         app.ui.toc_list.append(&row);
     }
 }
