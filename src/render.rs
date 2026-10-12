@@ -24,8 +24,9 @@ pub type LinkHandler = Rc<dyn Fn(&str) -> bool>;
 /// Upper bound on image file size handed to the decoder. Decoding still
 /// runs on the main thread; this bounds the input so a stray oversized file
 /// degrades to the fallback label instead of stalling the loop on read and
-/// decode of arbitrarily large data.
-const IMAGE_MAX_FILE_BYTES: u64 = 64 * 1024 * 1024;
+/// decode of arbitrarily large data. Also the limit for documents opened by
+/// the app layer (`app::MAX_DOC_BYTES` refers to it).
+pub(crate) const IMAGE_MAX_FILE_BYTES: u64 = 64 * 1024 * 1024;
 
 pub struct RenderCtx<'a> {
     pub doc: &'a Document,

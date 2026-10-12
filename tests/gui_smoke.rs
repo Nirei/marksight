@@ -65,6 +65,7 @@ fn gui_smoke_suite() {
     live_reload_survives_save_via_rename(&mv);
     huge_document_within_budget(&mv);
     error_state_on_missing_file(&mv);
+    oversize_file_shows_size_error(&mv);
     second_file_opens_its_own_window(&mv, &gtk_app);
     same_file_reuses_its_window(&mv, &gtk_app);
 }
@@ -429,6 +430,29 @@ fn error_state_on_missing_file(mv: &std::rc::Rc<app::App>) {
         "missing file should land on the error page, got {:?}",
         mv.visible_page()
     );
+}
+
+fn oversize_file_shows_size_error(mv: &std::rc::Rc<app::App>) {
+    // End-to-end wiring of the 64 MiB read cap: the worker's refusal must
+    // reach the error page with the size message, not a parse of a huge
+    // buffer. A sparse file keeps the test instant.
+    let path = std::env::temp_dir().join("marksight-smoke-huge-file.md");
+    let file = std::fs::File::create(&path).unwrap();
+    file.set_len(64 * 1024 * 1024 + 1).unwrap();
+    drop(file);
+    mv.open_path(&path);
+    // The stack may already sit on "error" from the previous test, so wait
+    // for this failure's own message rather than the page name.
+    assert!(
+        pump_until(Duration::from_secs(5), || mv
+            .error_text()
+            .contains("file too large")),
+        "oversize file should report the size problem, got page {:?} text {:?}",
+        mv.visible_page(),
+        mv.error_text()
+    );
+    assert_eq!(mv.visible_page(), "error");
+    let _ = std::fs::remove_file(&path);
 }
 
 fn second_file_opens_its_own_window(mv: &std::rc::Rc<app::App>, gtk_app: &gtk::Application) {
