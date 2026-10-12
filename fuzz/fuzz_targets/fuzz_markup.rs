@@ -18,11 +18,17 @@ fuzz_target!(|data: &[u8]| {
                     markup::is_well_formed(&segment.markup),
                     "markup not well formed: {segment:?}"
                 );
+                assert!(
+                    markup::is_pango_safe(&segment.markup),
+                    "pango-unsafe characters reached the markup: {segment:?}"
+                );
                 assert!(segment.char_start <= walk.text.chars().count());
             }
         }
         if let Block::Code { text, .. } = block {
-            assert!(markup::is_well_formed(&markup::code_markup(text, None)));
+            let markup = markup::code_markup(text, None);
+            assert!(markup::is_well_formed(&markup));
+            assert!(markup::is_pango_safe(&markup));
         }
     }
 });

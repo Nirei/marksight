@@ -148,6 +148,10 @@ fn assert_well_formed_block(
                 markup::is_well_formed(&segment.markup),
                 "unbalanced markup {segment:?}"
             );
+            prop_assert!(
+                markup::is_pango_safe(&segment.markup),
+                "pango-unsafe characters reached the markup: {segment:?}"
+            );
             prop_assert!(segment.char_start <= walk.text.chars().count());
         }
         // The searchable text is exactly the characters the markup
@@ -166,6 +170,7 @@ fn assert_well_formed_block(
     }
     if let Block::Code { text, .. } = block {
         prop_assert!(markup::is_well_formed(&markup::code_markup(text, None)));
+        prop_assert!(markup::is_pango_safe(&markup::code_markup(text, None)));
     }
     Ok(())
 }

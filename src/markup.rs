@@ -50,6 +50,12 @@ pub fn escape_text(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
     for ch in text.chars() {
         match ch {
+            // Safety net on top of the model-boundary sanitizer in doc.rs:
+            // NUL would panic the Rust→C string conversion, and the other
+            // control characters render as nothing useful (and are
+            // rejected by stricter GMarkup versions). One-for-one, so
+            // offsets stay aligned.
+            c if is_pango_unsafe(c) => out.push('\u{FFFD}'),
             '&' => out.push_str("&amp;"),
             '<' => out.push_str("&lt;"),
             '>' => out.push_str("&gt;"),
@@ -63,6 +69,7 @@ pub fn escape_attr(value: &str) -> String {
     let mut out = String::with_capacity(value.len());
     for ch in value.chars() {
         match ch {
+            c if is_pango_unsafe(c) => out.push('\u{FFFD}'),
             '&' => out.push_str("&amp;"),
             '<' => out.push_str("&lt;"),
             '>' => out.push_str("&gt;"),
@@ -72,6 +79,43 @@ pub fn escape_attr(value: &str) -> String {
         }
     }
     out
+}
+
+/// Characters that must not travel through Pango markup. NUL is the
+/// verified crash: it panics the Rust→C string conversion inside
+/// `set_markup` before Pango runs, and a raw NUL byte in a document file
+/// reaches it unfiltered. The C0 controls other than \t \n \r, plus \x7f,
+/// are accepted by this GLib's GMarkup (verified with parse_markup on text
+/// and attribute values) but render as nothing useful and are rejected by
+/// stricter GMarkup versions, so they are sanitized for the same
+/// one-for-one U+FFFD replacement. Applied everywhere text enters the
+/// model (doc.rs) and again at the escaping boundary, so character
+/// offsets never shift.
+pub fn is_pango_unsafe(c: char) -> bool {
+    matches!(
+        c,
+        '\0' | '\x01'..='\x08' | '\x0b' | '\x0c' | '\x0e'..='\x1f' | '\x7f'
+    )
+}
+
+/// True when `text` contains no [`is_pango_unsafe`] character and can be
+/// handed to `set_markup` (as part of our generated markup) unharmed. The
+/// fuzz and property suites assert this over arbitrary documents.
+pub fn is_pango_safe(text: &str) -> bool {
+    !text.chars().any(is_pango_unsafe)
+}
+
+/// Replaces every [`is_pango_unsafe`] character with U+FFFD, one for one.
+pub fn sanitize_for_pango(text: &str) -> std::borrow::Cow<'_, str> {
+    if is_pango_safe(text) {
+        std::borrow::Cow::Borrowed(text)
+    } else {
+        std::borrow::Cow::Owned(text.chars().map(replace_unsafe).collect())
+    }
+}
+
+fn replace_unsafe(c: char) -> char {
+    if is_pango_unsafe(c) { '\u{FFFD}' } else { c }
 }
 
 struct Walker<'a> {
@@ -886,6 +930,24 @@ mod tests {
         assert!(!is_well_formed("<b"));
     }
 
+    #[test]
+    fn pango_safety_predicate_and_sanitizer() {
+        assert!(is_pango_safe("plain text, tabs\tand newlines\nstay\r"));
+        assert!(!is_pango_safe("a\u{1}b"));
+        assert!(!is_pango_safe("a\0b"));
+        assert!(!is_pango_safe("a\u{7f}b"));
+        // One-for-one replacement keeps character offsets identical.
+        assert_eq!(sanitize_for_pango("a\0b\u{1}c"), "a\u{FFFD}b\u{FFFD}c");
+        assert_eq!(sanitize_for_pango("clean"), "clean");
+    }
+
+    #[test]
+    fn escaping_replaces_control_characters_one_for_one() {
+        assert_eq!(escape_text("a\0b&c"), "a\u{FFFD}b&amp;c");
+        assert_eq!(escape_attr("x\u{1f}\"q\""), "x\u{FFFD}&quot;q&quot;");
+        assert_eq!(escape_text("tabs\tnewlines\nstay"), "tabs\tnewlines\nstay");
+    }
+
     fn strip_tags(markup: &str) -> String {
         let mut out = String::new();
         let mut in_tag = false;
@@ -904,5 +966,96 @@ mod tests {
             .replace("&quot;", "\"")
             .replace("&apos;", "'")
             .replace("&amp;", "&")
+    }
+}
+
+/// Pango-validity of generated markup, checked against the real parser
+/// (the same one `gtk::Label::set_markup` uses). Runs only with the ui
+/// feature, since it needs the gtk re-export of pango; no display is
+/// required to parse.
+#[cfg(all(test, feature = "ui"))]
+mod pango_tests {
+    use super::*;
+    use crate::doc::parse;
+    use gtk::pango;
+
+    #[test]
+    fn pango_tolerates_c0_controls_on_this_glib_but_not_nul() {
+        // Verified behavior of this GLib's GMarkup: C0 controls parse fine
+        // in text content and in attribute values. The hard failure is
+        // NUL, which never reaches the parser: glib's Rust→C string
+        // conversion panics on it (next test). The model-boundary
+        // sanitizer keeps both classes out regardless of GLib version.
+        assert!(pango::parse_markup("a\u{1}b", '\0').is_ok());
+        assert!(pango::parse_markup("<span font=\"a\u{2}b\">t</span>", '\0').is_ok());
+        assert!(pango::parse_markup("a\u{FFFD}b", '\0').is_ok());
+    }
+
+    #[test]
+    #[should_panic(expected = "GStrInteriorNulError")]
+    fn nul_panics_the_c_string_conversion_before_pango_runs() {
+        // The reproduced crash: a document containing a raw NUL byte used
+        // to reach set_markup with the NUL intact.
+        let _ = pango::parse_markup("a\0b", '\0');
+    }
+
+    /// pango::parse_markup knows only Pango's own tags; the `<a>` tag is a
+    /// GTK extension handled by GtkLabel's parser, so anchors are stripped
+    /// (attributes included) before the parse check. Their hrefs are still
+    /// covered: is_pango_safe runs on the markup with anchors in place.
+    fn strip_anchor_tags(markup: &str) -> String {
+        let mut out = String::new();
+        let mut rest = markup;
+        while let Some(at) = rest.find('<') {
+            let (text, after) = rest.split_at(at);
+            out.push_str(text);
+            if let Some(close) = after.find('>') {
+                let tag = &after[1..close];
+                if !(tag.starts_with('a') || tag.starts_with("/a")) {
+                    out.push_str(&after[..=close]);
+                }
+                rest = &after[close + 1..];
+            } else {
+                out.push_str(after);
+                rest = "";
+            }
+        }
+        out.push_str(rest);
+        out
+    }
+
+    #[test]
+    fn markup_from_control_laden_documents_parses() {
+        let markdown = "text \0 with \u{1} controls \u{7f}\n\n`code \u{b} span`\n\n```\nblock\u{c}\n```\n\nref[^\u{e}n]\n\n[^\u{e}n]: note \0 text\n";
+        let doc = parse(markdown);
+        let mut markups: Vec<String> = Vec::new();
+        for block in doc
+            .blocks
+            .iter()
+            .chain(doc.footnotes.iter().flat_map(|f| f.blocks.iter()))
+        {
+            if let Block::Code { text, .. } = block {
+                markups.push(code_markup(text, None));
+            }
+            let inlines = match block {
+                Block::Heading { inlines, .. } | Block::Paragraph(inlines) => inlines,
+                _ => continue,
+            };
+            for segment in walk_inlines(inlines, &doc, None).segments {
+                markups.push(segment.markup);
+            }
+        }
+        assert!(!markups.is_empty());
+        for markup in &markups {
+            assert!(is_well_formed(markup), "not well formed: {markup:?}");
+            assert!(
+                is_pango_safe(markup),
+                "pango-unsafe characters survived: {markup:?}"
+            );
+            assert!(
+                pango::parse_markup(&strip_anchor_tags(markup), '\0').is_ok(),
+                "pango rejected our markup: {markup:?}"
+            );
+        }
     }
 }

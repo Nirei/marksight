@@ -68,6 +68,7 @@ fn gui_smoke_suite() {
     huge_document_within_budget(&mv);
     error_state_on_missing_file(&mv);
     oversize_file_shows_size_error(&mv);
+    control_characters_do_not_crash_the_viewer(&mv);
     second_file_opens_its_own_window(&mv, &gtk_app);
     same_file_reuses_its_window(&mv, &gtk_app);
 }
@@ -547,6 +548,23 @@ fn oversize_file_shows_size_error(mv: &std::rc::Rc<app::App>) {
         mv.error_text()
     );
     assert_eq!(mv.visible_page(), "error");
+    let _ = std::fs::remove_file(&path);
+}
+
+fn control_characters_do_not_crash_the_viewer(mv: &std::rc::Rc<app::App>) {
+    // Regression: a raw NUL byte in a file used to reach set_markup and
+    // panic glib's Rust→C string conversion; the model boundary now
+    // replaces it (and other controls) with U+FFFD before rendering.
+    let path = std::env::temp_dir().join("marksight-smoke-controls.md");
+    std::fs::write(&path, b"before \0 middle \x01 \x7f after\n").unwrap();
+    mv.open_path(&path);
+    assert!(
+        pump_until(Duration::from_secs(5), || mv.visible_page() == "doc"
+            && mv.rendering_complete()),
+        "control-laden document never rendered, page={}",
+        mv.visible_page()
+    );
+    assert_eq!(mv.current_doc_len(), 1);
     let _ = std::fs::remove_file(&path);
 }
 

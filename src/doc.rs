@@ -9,6 +9,8 @@
 
 use pulldown_cmark::{CodeBlockKind, Options, Parser, Tag, TagEnd};
 
+use crate::markup::sanitize_for_pango;
+
 pub use pulldown_cmark::Alignment;
 pub use pulldown_cmark::BlockQuoteKind;
 
@@ -408,28 +410,34 @@ impl Builder {
         if text.is_empty() {
             return;
         }
+        // Model boundary: everything a document says enters here, and the
+        // control characters a label cannot meaningfully show — NUL, which
+        // panics the C string conversion inside set_markup, and the other
+        // C0 controls and \x7f — are replaced one-for-one so find offsets
+        // stay aligned.
+        let text = sanitize_for_pango(text);
         let style = self.current_style();
         for frame in self.stack.iter_mut().rev() {
             match frame {
                 Frame::Code { text: code, .. } => {
-                    code.push_str(text);
+                    code.push_str(&text);
                     return;
                 }
                 Frame::Image { alt, .. } => {
-                    alt.push_str(text);
+                    alt.push_str(&text);
                     return;
                 }
                 Frame::Paragraph { inlines }
                 | Frame::Heading { inlines, .. }
                 | Frame::Cell { inlines }
                 | Frame::Link { runs: inlines, .. } => {
-                    append_run(inlines, text, style);
+                    append_run(inlines, &text, style);
                     return;
                 }
                 Frame::Item {
                     pending_inlines, ..
                 } => {
-                    append_run(pending_inlines, text, style);
+                    append_run(pending_inlines, &text, style);
                     return;
                 }
                 _ => continue,
@@ -530,6 +538,7 @@ impl Builder {
             Event::End(end) => self.end(end),
             Event::Text(text) => self.push_text(&text),
             Event::Code(text) => {
+                let text = sanitize_for_pango(&text);
                 for frame in self.stack.iter_mut().rev() {
                     match frame {
                         Frame::Image { alt, .. } => {
@@ -540,14 +549,14 @@ impl Builder {
                     }
                 }
                 let inline = Inline::Run {
-                    text: text.into_string(),
+                    text: text.into_owned(),
                     style: self.current_style().code(),
                 };
                 self.push_inline(inline);
             }
             Event::FootnoteReference(label) => {
                 self.push_inline(Inline::FootnoteRef {
-                    label: label.into_string(),
+                    label: sanitize_for_pango(&label).into_owned(),
                 });
             }
             Event::SoftBreak => self.push_text(" "),
@@ -624,7 +633,7 @@ impl Builder {
                 self.flush_item_pending();
                 self.path.push(self.container_len());
                 self.stack.push(Frame::Footnote {
-                    label: label.into_string(),
+                    label: sanitize_for_pango(&label).into_owned(),
                     blocks: Vec::new(),
                 });
             }
@@ -661,15 +670,15 @@ impl Builder {
             Tag::Link {
                 dest_url, title, ..
             } => self.stack.push(Frame::Link {
-                href: dest_url.into_string(),
-                title: title.into_string(),
+                href: sanitize_for_pango(&dest_url).into_owned(),
+                title: sanitize_for_pango(&title).into_owned(),
                 runs: Vec::new(),
             }),
             Tag::Image {
                 dest_url, title, ..
             } => self.stack.push(Frame::Image {
-                url: dest_url.into_string(),
-                title: title.into_string(),
+                url: sanitize_for_pango(&dest_url).into_owned(),
+                title: sanitize_for_pango(&title).into_owned(),
                 alt: String::new(),
             }),
             Tag::Emphasis => {
@@ -1522,5 +1531,31 @@ mod tests {
     fn entities_and_specials_survive_as_text() {
         let doc = parse("a < b & c > d \"quoted\"");
         assert_eq!(doc.blocks, vec![para("a < b & c > d \"quoted\"")]);
+    }
+
+    #[test]
+    fn control_characters_are_replaced_at_the_model_boundary() {
+        // A raw NUL in a file used to reach set_markup and panic the C
+        // string conversion; other C0 controls render as nothing useful
+        // and break the Pango parse in attribute positions. All of them
+        // enter the model as U+FFFD, one for one, so find offsets stay
+        // aligned; \t \n \r are legitimate text and survive.
+        let doc = parse("a\0b\u{1}c\u{7f}d\u{b}e\u{c}f\tg\nh");
+        assert_eq!(
+            doc.blocks,
+            vec![Block::Paragraph(vec![Inline::Run {
+                text: "a\u{FFFD}b\u{FFFD}c\u{FFFD}d\u{FFFD}e\u{FFFD}f\tg h".into(),
+                style: Style::default(),
+            }])]
+        );
+        let doc = parse("```\ncode\u{1}line\n```");
+        assert!(matches!(&doc.blocks[0], Block::Code { text, .. } if text == "code\u{FFFD}line\n"));
+        let doc = parse("`span\u{2}`");
+        assert!(
+            matches!(&doc.blocks[0], Block::Paragraph(v) if v == &vec![Inline::Run {
+                text: "span\u{FFFD}".into(),
+                style: Style { code: true, ..Style::default() },
+            }])
+        );
     }
 }
