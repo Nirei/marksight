@@ -40,6 +40,15 @@ vector does not exist here.
 | `F9` | Toggle contents sidebar |
 | `Ctrl+W` / `Ctrl+Q` | Close window / quit |
 
+## Translations
+
+The interface ships in English plus 56 translated locales. The catalogs
+are machine translations, checked for terminology, placeholders and plural
+forms but not reviewed by native speakers; quality varies, and the smaller
+languages especially deserve a human eye. Improvements are welcome: edit
+`po/<locale>.po` (conventions and tooling in `po/README.md`) and open a pull
+request.
+
 ## Install
 
 ### From source
