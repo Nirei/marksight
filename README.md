@@ -81,7 +81,9 @@ packaging path; see `packaging/deb/build-local.sh`).
 | Flathub | `packaging/flathub/`, submission checklist in the manifest |
 | crates.io | `cargo install marksight` once published |
 
-Releases attach stripped `x86_64-unknown-linux-gnu` tarballs built by CI.
+Releases attach stripped `x86_64-unknown-linux-gnu` tarballs and a Debian
+package built by CI. The release process is documented in
+`docs/releasing.md`.
 
 ## Development
 

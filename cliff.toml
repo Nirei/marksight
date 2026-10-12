@@ -1,0 +1,90 @@
+# Changelog automation (git-cliff), keep-a-changelog style.
+#
+# Only user-facing commits are kept: new features, fixes, performance
+# work and user-visible renames/branding. Maintenance (chore, build, ci,
+# test, docs, style, refactor, packaging internals) is left out, as are
+# fixes whose scope is the test suite or CI itself.
+#
+# Usage:
+#   git cliff --tag v1.2.3 -o CHANGELOG.md   bootstrap a full changelog
+#                                             (rewrites curated sections)
+#   git cliff --latest --strip all            section for the newest tag;
+#                                             the release workflow splices
+#                                             this into CHANGELOG.md and
+#                                             uses it as release notes
+
+[changelog]
+header = """
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+"""
+body = """{% if version %}\
+## [{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+{% else %}\
+## [Unreleased]
+{% endif %}\
+{%- for group, commits in commits | group_by(attribute="group") %}
+### {{ group | striptags | trim | upper_first }}
+{% for commit in commits -%}
+- {{ commit.message | upper_first }}
+{% endfor -%}
+{%- endfor %}
+"""
+footer = """
+{%- if versions is defined %}\
+{%- for version in versions %}\
+{% if version.previous.version %}\
+[{{ version.version | trim_start_matches(pat="v") }}]: {{ "https://github.com/cinzatech/marksight/compare/" ~ version.previous.version ~ "..." ~ version.version }}
+{% else %}\
+[{{ version.version | trim_start_matches(pat="v") }}]: {{ "https://github.com/cinzatech/marksight/commits/" ~ version.version }}
+{% endif %}\
+{% endfor %}\
+{%- endif %}
+"""
+trim = true
+
+[git]
+conventional_commits = true
+filter_unconventional = true
+split_commits = false
+filter_commits = true
+tag_pattern = "v[0-9].*"
+sort_commits = "newest"
+
+[[git.commit_parsers]]
+# The release automation's own changelog commits never document user-facing
+# change on their own.
+message = "^chore\\(changelog\\)"
+skip = true
+
+[[git.commit_parsers]]
+# Test-suite and CI fixes are not user-facing.
+message = "^[a-z]+\\((ci|tests?)\\)"
+skip = true
+
+[[git.commit_parsers]]
+# Breaking changes of any kind are "Changed" per keep-a-changelog.
+message = "^[a-z]+(\\([\\w, -]+\\))?!:"
+group = "<!-- 1 -->Changed"
+
+[[git.commit_parsers]]
+message = "^feat"
+group = "<!-- 0 -->Added"
+
+[[git.commit_parsers]]
+message = "^(fix|bug)"
+group = "<!-- 2 -->Fixed"
+
+[[git.commit_parsers]]
+message = "^perf"
+group = "<!-- 3 -->Performance"
+
+[[git.commit_parsers]]
+# Project-wide rename or visual identity changes reach the user directly.
+message = "^(rename|branding|rebrand)"
+group = "<!-- 1 -->Changed"

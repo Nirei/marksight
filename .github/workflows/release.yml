@@ -7,6 +7,11 @@ on:
 permissions:
   contents: write
 
+# Serialize releases so two tag pushes cannot race to update CHANGELOG.md.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   build:
     name: Build ${{ matrix.target }}
@@ -35,7 +40,7 @@ jobs:
           STAGE="target/$NAME"
           mkdir -p "$STAGE"
           cp target/${{ matrix.target }}/release/marksight "$STAGE/"
-          cp README.md "$STAGE/"
+          cp README.md CHANGELOG.md "$STAGE/"
           cp LICENSE-MIT LICENSE-APACHE "$STAGE/"
           tar -czf "target/$NAME.tar.gz" -C target "$NAME"
       - name: Upload artifact
@@ -44,12 +49,81 @@ jobs:
           name: ${{ matrix.target }}
           path: target/marksight-*.tar.gz
 
-  publish:
-    name: Create GitHub release
-    needs: build
+  deb:
+    name: Build .deb package
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install packaging dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y devscripts debhelper build-essential libgtk-4-dev pkg-config
+      - name: Build package
+        run: packaging/deb/build-local.sh
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: marksight-deb
+          path: packaging/deb/*.deb
+
+  publish:
+    name: Changelog and GitHub release
+    needs: [build, deb]
+    runs-on: ubuntu-latest
+    steps:
+      # main (not the tag) so the changelog commit lands on the branch tip;
+      # full history and tags so git-cliff can compute the release section.
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Install git-cliff
+        run: |
+          VER=2.14.2
+          curl -sSL "https://github.com/orhun/git-cliff/releases/download/v${VER}/git-cliff-${VER}-x86_64-unknown-linux-musl.tar.gz" \
+            | tar -xz -C /tmp "git-cliff-${VER}/git-cliff"
+          sudo install -Dm755 "/tmp/git-cliff-${VER}/git-cliff" /usr/local/bin/git-cliff
+      - name: Update CHANGELOG.md on main
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # A section hand-written for this version is kept as is; the
+          # automation only fills in what is missing.
+          if grep -q "^## \[$VERSION\]" CHANGELOG.md; then
+            echo "$VERSION is already documented in CHANGELOG.md"
+          else
+            git cliff --latest --strip all > /tmp/section.md
+            awk -v sec="$(cat /tmp/section.md)" \
+              '!done && /^## \[/ { printf "%s\n\n", sec; done=1 } { print }' \
+              CHANGELOG.md > /tmp/new.md && mv /tmp/new.md CHANGELOG.md
+            grep -q "^## \[$VERSION\]" CHANGELOG.md
+            PREV=$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || true)
+            if [ -n "$PREV" ]; then
+              printf '[%s]: https://github.com/cinzatech/marksight/compare/%s...%s\n' \
+                "$VERSION" "$PREV" "$TAG" >> CHANGELOG.md
+            else
+              printf '[%s]: https://github.com/cinzatech/marksight/commits/%s\n' \
+                "$VERSION" "$TAG" >> CHANGELOG.md
+            fi
+            git add CHANGELOG.md
+            git commit -m "chore(changelog): document ${TAG}"
+            git push origin HEAD:main
+          fi
+      - name: Compose release notes from the changelog
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          awk -v ver="$VERSION" '
+            $0 ~ "^## \\[" ver "\\]" { inside=1 }
+            inside && seen && (/^## \[/ || /^\[/) { exit }
+            inside { seen=1; print }
+          ' CHANGELOG.md | sed -e '/./,$!d' > notes.md
+          test -s notes.md
       - uses: actions/download-artifact@v4
         with:
           path: dist
@@ -57,5 +131,5 @@ jobs:
       - name: GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
-          files: dist/*.tar.gz
+          body_path: notes.md
+          files: dist/*
