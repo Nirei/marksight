@@ -164,6 +164,50 @@ pub fn parse(markdown: &str) -> Document {
     builder.finish()
 }
 
+/// GitHub-style heading slug: lowercase, punctuation and symbols dropped,
+/// spaces to '-', with later duplicates suffixed -1, -2 (see
+/// [`Builder::claim_slug`]). Letters of any script, digits, '_' and '-'
+/// survive; a heading whose text yields nothing (punctuation only) gets
+/// "section".
+fn heading_slug(text: &str) -> String {
+    let mut slug = String::with_capacity(text.len());
+    for ch in text.trim().chars() {
+        for lowered in ch.to_lowercase() {
+            match lowered {
+                ' ' => slug.push('-'),
+                '-' | '_' => slug.push(lowered),
+                c if c.is_alphanumeric() => slug.push(c),
+                _ => {}
+            }
+        }
+    }
+    if slug.is_empty() {
+        slug.push_str("section");
+    }
+    slug
+}
+
+/// Plain text of a heading's inlines for slug generation: runs and link
+/// labels contribute their text, images their alt text. Footnote references
+/// cannot be numbered yet (definitions may appear later in the document) and
+/// contribute nothing.
+fn heading_text(inlines: &[Inline], out: &mut String) {
+    for inline in inlines {
+        match inline {
+            Inline::Run { text, .. } => out.push_str(text),
+            Inline::Link { href, runs, .. } => {
+                if runs.is_empty() {
+                    out.push_str(href);
+                } else {
+                    heading_text(runs, out);
+                }
+            }
+            Inline::Image { alt, .. } => out.push_str(alt),
+            Inline::FootnoteRef { .. } => {}
+        }
+    }
+}
+
 /// Deepest block-container nesting (nested blockquotes, lists, footnote
 /// bodies) kept as real structure. Containers nested beyond this are
 /// flattened into their parent: their blocks attach to the enclosing
@@ -235,6 +279,9 @@ struct Builder {
     blocks: Vec<Block>,
     footnotes: Vec<Footnote>,
     headings: Vec<TocEntry>,
+    /// Anchor ids already claimed by earlier headings, explicit or
+    /// generated: the first occurrence of an id wins, later ones dedupe.
+    used_ids: std::collections::HashSet<String>,
     /// Container frames currently on the stack (quotes, lists, items,
     /// footnote bodies), counted for [`MAX_CONTAINER_DEPTH`].
     depth: usize,
@@ -280,6 +327,7 @@ impl Builder {
             blocks: Vec::new(),
             footnotes: Vec::new(),
             headings: Vec::new(),
+            used_ids: std::collections::HashSet::new(),
             depth: 0,
             suppressed: 0,
         }
@@ -306,6 +354,29 @@ impl Builder {
         }
         self.depth -= 1;
         true
+    }
+
+    /// Claims `id` for a heading: the first occurrence of a duplicate
+    /// explicit id wins, later ones get no anchor at all.
+    fn claim_id(&mut self, id: String) -> Option<String> {
+        if self.used_ids.insert(id.clone()) {
+            Some(id)
+        } else {
+            None
+        }
+    }
+
+    /// Claims the slug of `text`, appending GitHub-style -1, -2 suffixes
+    /// until it is unique among all earlier anchors.
+    fn claim_slug(&mut self, text: &str) -> String {
+        let base = heading_slug(text);
+        let mut candidate = base.clone();
+        let mut suffix = 1;
+        while !self.used_ids.insert(candidate.clone()) {
+            candidate = format!("{base}-{suffix}");
+            suffix += 1;
+        }
+        candidate
     }
 
     fn current_style(&self) -> Style {
@@ -632,6 +703,18 @@ impl Builder {
             }
             TagEnd::Heading(_) => {
                 if let Some(Frame::Heading { level, id, inlines }) = self.stack.pop() {
+                    // Every heading gets an anchor: an explicit {#id} when
+                    // its id is still free (the first duplicate wins, later
+                    // ones drop to no anchor), otherwise a GitHub-style slug
+                    // deduplicated with -1, -2 suffixes.
+                    let id = match id {
+                        Some(explicit) => self.claim_id(explicit),
+                        None => {
+                            let mut text = String::new();
+                            heading_text(&inlines, &mut text);
+                            Some(self.claim_slug(&text))
+                        }
+                    };
                     self.attach(Block::Heading { level, id, inlines });
                 }
             }
@@ -787,7 +870,7 @@ mod tests {
     fn heading(level: u8, text: &str) -> Block {
         Block::Heading {
             level,
-            id: None,
+            id: Some(heading_slug(text)),
             inlines: vec![run(text)],
         }
     }
@@ -872,6 +955,91 @@ mod tests {
             panic!("expected heading");
         };
         assert_eq!(id.as_deref(), Some("my-id"));
+    }
+
+    #[test]
+    fn heading_slug_rules() {
+        assert_eq!(heading_slug("Hello World"), "hello-world");
+        assert_eq!(heading_slug("Hello, World!"), "hello-world");
+        assert_eq!(heading_slug("C++ & Rust?"), "c--rust");
+        assert_eq!(heading_slug("  padded  "), "padded");
+        assert_eq!(
+            heading_slug("keep_under-scored-dash"),
+            "keep_under-scored-dash"
+        );
+        assert_eq!(heading_slug("Ünïcödé Tëst"), "ünïcödé-tëst");
+        assert_eq!(heading_slug("中文标题"), "中文标题");
+        assert_eq!(heading_slug("!!!"), "section");
+        assert_eq!(heading_slug(""), "section");
+    }
+
+    #[test]
+    fn headings_without_id_get_slug_anchors() {
+        let doc = parse("# Hello, World!\n\ntext");
+        let Block::Heading { id, .. } = &doc.blocks[0] else {
+            panic!("expected heading");
+        };
+        assert_eq!(id.as_deref(), Some("hello-world"));
+    }
+
+    #[test]
+    fn duplicate_headings_dedupe_with_suffixes() {
+        let doc = parse("# a\n\n# a\n\n# a");
+        let ids: Vec<&str> = doc
+            .blocks
+            .iter()
+            .map(|b| match b {
+                Block::Heading { id, .. } => id.as_deref().unwrap(),
+                _ => "",
+            })
+            .collect();
+        assert_eq!(ids, vec!["a", "a-1", "a-2"]);
+    }
+
+    #[test]
+    fn explicit_id_wins_over_slug() {
+        // The explicit id is used verbatim; the slug "hello-world" is not
+        // generated for a heading that carries its own id.
+        let doc = parse("# Hello, World! {#explicit}");
+        let Block::Heading { id, .. } = &doc.blocks[0] else {
+            panic!("expected heading");
+        };
+        assert_eq!(id.as_deref(), Some("explicit"));
+    }
+
+    #[test]
+    fn explicit_and_generated_ids_share_one_namespace() {
+        // A slug colliding with an explicit id dedupes...
+        let doc = parse("# Foo {#foo}\n\n# Foo");
+        let ids: Vec<Option<&str>> = doc
+            .blocks
+            .iter()
+            .map(|b| match b {
+                Block::Heading { id, .. } => id.as_deref(),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(ids, vec![Some("foo"), Some("foo-1")]);
+        // ...and a duplicate explicit id keeps only its first occurrence.
+        let doc = parse("# one {#dup}\n\n# two {#dup}");
+        let ids: Vec<Option<&str>> = doc
+            .blocks
+            .iter()
+            .map(|b| match b {
+                Block::Heading { id, .. } => id.as_deref(),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(ids, vec![Some("dup"), None]);
+    }
+
+    #[test]
+    fn heading_slug_uses_inline_text_link_and_alt() {
+        let doc = parse("# a [linked *word*](https://x) and ![alt text](i.png)");
+        let Block::Heading { id, .. } = &doc.blocks[0] else {
+            panic!("expected heading");
+        };
+        assert_eq!(id.as_deref(), Some("a-linked-word-and-alt-text"));
     }
 
     #[test]

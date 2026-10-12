@@ -58,6 +58,7 @@ fn gui_smoke_suite() {
     toc_sidebar_fills_pane(&mv);
     search_finds_and_cycles(&mv);
     search_clears_highlights(&mv);
+    unknown_anchor_link_is_handled_without_launching(&mv);
     scroll_targets_move_viewport(&mv);
     pathological_documents_do_not_crash(&mv);
     image_keeps_space_in_tall_document(&mv);
@@ -177,6 +178,22 @@ fn search_clears_highlights(mv: &std::rc::Rc<app::App>) {
     mv.search_set("");
     pump_until(Duration::from_secs(2), || mv.search_counter().is_empty());
     assert!(mv.search_counter().is_empty());
+}
+
+fn unknown_anchor_link_is_handled_without_launching(mv: &std::rc::Rc<app::App>) {
+    // Regression: an unknown in-document anchor used to fall through to
+    // GTK's default URI launcher (returning false from activate-link);
+    // every # URI must be fully handled as a no-op instead.
+    let label = mv
+        .heading_widget(0)
+        .and_downcast::<gtk::Label>()
+        .expect("first heading is a label");
+    let handled: bool = label.emit_by_name("activate-link", &[&"#definitely-not-an-anchor"]);
+    assert!(
+        handled,
+        "a # URI must always be handled, also when its anchor is unknown"
+    );
+    assert_eq!(mv.visible_page(), "doc", "unknown anchor must not navigate");
 }
 
 fn scroll_targets_move_viewport(mv: &std::rc::Rc<app::App>) {

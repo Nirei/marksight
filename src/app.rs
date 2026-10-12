@@ -1147,13 +1147,15 @@ fn apply_doc(app: &Rc<App>, path: &Path, parsed: Document) {
         Rc::new(move |uri: &str| {
             if let Some(anchor) = uri.strip_prefix('#') {
                 // In-document targets: footnote rows ("#fn-N") and heading
-                // anchors from explicit {#id} attributes share one map.
+                // anchors from explicit {#id} attributes or generated slugs
+                // share one map. Always handled, also for unknown anchors:
+                // falling through would hand "#whatever" to GTK's default
+                // launcher, which has no meaningful way to open it.
                 let target = anchors.borrow().get(anchor).cloned();
                 if let Some(target) = target {
                     scroll_to(&app_for_links, &target);
-                    return true;
                 }
-                return false;
+                return true;
             }
             // Always stop propagation, also for refused schemes: letting
             // GTK fall through would hand the URI to the default launcher
