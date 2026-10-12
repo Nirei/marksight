@@ -682,7 +682,12 @@ fn picture_for(image: &markup::ImageInfo, ctx: &RenderCtx<'_>) -> gtk::Widget {
             picture.set_halign(gtk::Align::Fill);
             picture.set_can_shrink(true);
             if !image.alt.is_empty() {
+                // The tooltip serves pointer users; the alternative text is
+                // the "alt" attribute equivalent that assistive technology
+                // reads. Both come from the document, so neither is
+                // translated.
                 picture.set_tooltip_text(Some(&image.alt));
+                picture.set_alternative_text(Some(&image.alt));
             }
             return picture.upcast::<gtk::Widget>();
         }
