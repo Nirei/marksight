@@ -1,5 +1,6 @@
 /target
 /fuzz/target
+/po/.mo
 /fuzz/corpus
 /fuzz/artifacts
 *.snap.new

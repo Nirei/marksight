@@ -25,7 +25,10 @@ by hand in that case.
 Packaging compiles every catalog listed in `po/LINGUAS` with `msgfmt` to
 `<LOCALEDIR>/<ll_CC>/LC_MESSAGES/marksight.mo`. `LOCALEDIR` is set at
 build time and defaults to `/usr/share/locale` (the deb and AUR prefix);
-the flatpak manifest passes `LOCALEDIR=/app/share/locale`.
+the flatpak manifest passes `LOCALEDIR=/app/share/locale`. `make install`
+stages catalogs with `make po-mo` and installs them under
+`$(DATADIR)/locale`; a prefix other than `/usr` needs the binary built
+with `LOCALEDIR=$(PREFIX)/share/locale`.
 
 ## Translation conventions
 

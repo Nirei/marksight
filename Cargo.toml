@@ -55,6 +55,15 @@ assets = [
   ["data/io.github.cinzatech.marksight.metainfo.xml", "usr/share/metainfo/", "644"],
   ["data/icons/hicolor/scalable/apps/io.github.cinzatech.marksight.svg", "usr/share/icons/hicolor/scalable/apps/", "644"],
   ["data/marksight.1", "usr/share/man/man1/", "644"],
+  ["po/.mo/zh_CN/LC_MESSAGES/marksight.mo", "usr/share/locale/zh_CN/LC_MESSAGES/", "644"],
+  ["po/.mo/zh_TW/LC_MESSAGES/marksight.mo", "usr/share/locale/zh_TW/LC_MESSAGES/", "644"],
+  ["po/.mo/hi/LC_MESSAGES/marksight.mo", "usr/share/locale/hi/LC_MESSAGES/", "644"],
+  ["po/.mo/es/LC_MESSAGES/marksight.mo", "usr/share/locale/es/LC_MESSAGES/", "644"],
+  ["po/.mo/ar/LC_MESSAGES/marksight.mo", "usr/share/locale/ar/LC_MESSAGES/", "644"],
+  ["po/.mo/fr/LC_MESSAGES/marksight.mo", "usr/share/locale/fr/LC_MESSAGES/", "644"],
+  ["po/.mo/pt_BR/LC_MESSAGES/marksight.mo", "usr/share/locale/pt_BR/LC_MESSAGES/", "644"],
+  ["po/.mo/ru/LC_MESSAGES/marksight.mo", "usr/share/locale/ru/LC_MESSAGES/", "644"],
+  ["po/.mo/id/LC_MESSAGES/marksight.mo", "usr/share/locale/id/LC_MESSAGES/", "644"],
 ]
 
 [lints.clippy]
