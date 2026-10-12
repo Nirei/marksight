@@ -113,10 +113,18 @@ fn toc_sidebar_fills_pane(mv: &std::rc::Rc<app::App>) {
         .ancestor(gtk::ScrolledWindow::static_type())
         .expect("TOC list has no ScrolledWindow ancestor");
     let scrolled = ancestor.downcast_ref::<gtk::ScrolledWindow>().unwrap();
-    let page = scrolled.vadjustment().page_size();
+    // Allocation is asynchronous: present, map, window-manager layout and
+    // size-allocate can trail the render-complete pump by more than any
+    // fixed settle time (on a display without an accessibility bus, GTK's
+    // bridge retries stall startup for over a second). Wait for the pane
+    // to be sized instead of assuming a timer is enough.
+    let filled = pump_until(Duration::from_secs(5), || {
+        scrolled.vadjustment().page_size() >= 400.0
+    });
     assert!(
-        page >= 400.0,
-        "TOC sidebar should fill its pane vertically (visible page {page}px in a ~700px window)"
+        filled,
+        "TOC sidebar should fill its pane vertically (visible page {}px in a ~700px window)",
+        scrolled.vadjustment().page_size()
     );
 }
 
