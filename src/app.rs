@@ -776,13 +776,20 @@ fn key_pressed(app: &Rc<App>, accel: &str) {
         "<control>o" => open_dialog(app),
         "F9" => toggle_toc(app),
         "<control>w" => app.ui.window.close(),
-        "<control>q" => app
-            .ui
-            .window
-            .application()
-            .expect("window attached to application")
-            .quit(),
+        "<control>q" => quit_or_close(&app.ui.window),
         _ => {}
+    }
+}
+
+/// Ctrl+Q: quit through the owning application when there is one, and
+/// close the window when there is not — a detached window (no application
+/// attached) must degrade to closing, not panic. Test hook for the smoke
+/// suite; production reaches it through the shortcut controller.
+#[doc(hidden)]
+pub fn quit_or_close(window: &gtk::ApplicationWindow) {
+    match window.application() {
+        Some(gtk_app) => gtk_app.quit(),
+        None => window.close(),
     }
 }
 

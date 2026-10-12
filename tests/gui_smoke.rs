@@ -72,6 +72,7 @@ fn gui_smoke_suite() {
     control_characters_do_not_crash_the_viewer(&mv);
     second_file_opens_its_own_window(&mv, &gtk_app);
     same_file_reuses_its_window(&mv, &gtk_app);
+    ctrl_q_without_application_closes_gracefully();
 }
 
 fn welcome_page_visible(mv: &std::rc::Rc<app::App>) {
@@ -674,5 +675,22 @@ fn same_file_reuses_its_window(mv: &std::rc::Rc<app::App>, gtk_app: &gtk::Applic
         app::window_count(),
         2,
         "a different file must still get its own window"
+    );
+}
+
+fn ctrl_q_without_application_closes_gracefully() {
+    // Regression: Ctrl+Q used to .expect() an attached application; a
+    // detached window must close instead of panicking.
+    let window = gtk::ApplicationWindow::builder()
+        .default_width(120)
+        .default_height(80)
+        .build();
+    window.present();
+    pump(Duration::from_millis(150));
+    app::quit_or_close(&window);
+    pump(Duration::from_millis(150));
+    assert!(
+        !window.is_visible(),
+        "a detached window should close on quit, not panic"
     );
 }
