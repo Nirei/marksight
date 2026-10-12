@@ -531,7 +531,10 @@ fn error_page() -> (gtk::Widget, gtk::Label) {
 }
 
 fn open_dialog(app: &Rc<App>) {
-    let dialog = gtk::FileDialog::builder().title("Open Markdown").build();
+    // No custom title: with the property unset, GTK shows its own
+    // translated default ("Pick a File") from the gtk40 message catalog,
+    // which an app-supplied English string would replace.
+    let dialog = gtk::FileDialog::new();
     dialog.open(Some(&app.ui.window), None::<&gtk::gio::Cancellable>, {
         let app = app.clone();
         move |result| {
