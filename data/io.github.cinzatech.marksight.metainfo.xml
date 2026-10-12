@@ -31,6 +31,20 @@
     <display_length compare="ge">360</display_length>
   </requires>
   <releases>
+    <release version="1.0.0" date="2026-10-12">
+      <description>
+        <p>First stable release.</p>
+        <ul>
+          <li>User interface translated into 100 locales besides English</li>
+          <li>Screen reader support: announced match counts, image alt text, correct heading levels</li>
+          <li>GitHub-style heading anchors and safe internal links</li>
+          <li>Documents stream into the view instead of building before the first paint</li>
+          <li>Image loading confined to the document's directory; external links open only for allowlisted schemes</li>
+          <li>Second launches open their file instantly, in a new window</li>
+        </ul>
+        <p>See CHANGELOG.md for the full list of user-facing changes.</p>
+      </description>
+    </release>
     <release version="0.1.0" date="2026-10-07">
       <description>
         <p>Initial release.</p>

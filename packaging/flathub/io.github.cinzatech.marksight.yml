@@ -43,7 +43,7 @@ modules:
         msgfmt -o "/app/share/locale/$(basename "$po" .po)/LC_MESSAGES/marksight.mo" "$po"; done
     sources:
       - type: archive
-        url: https://github.com/cinzatech/marksight/archive/refs/tags/v0.1.0.tar.gz
+        url: https://github.com/cinzatech/marksight/archive/refs/tags/v1.0.0.tar.gz
         sha256: REPLACE_AT_SUBMISSION
         x-checker-data:
           type: json
