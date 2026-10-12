@@ -340,6 +340,53 @@ pub fn blocks_text(blocks: &[Block], footnotes: &Document) -> String {
     parts.join("\n")
 }
 
+/// The document's searchable text units: one entry per label the renderer
+/// creates, in render order. This is the one decomposition shared by the
+/// find index ([`crate::find::TextIndex::build`]) and the renderer's label
+/// groups — a match's entry number therefore always points at the label
+/// that shows the matched text:
+///
+/// - every paragraph, heading and code block anywhere in the tree (inside
+///   quotes, alerts, list items and footnote bodies included) is one unit;
+/// - every table cell is its own unit (tables render one label per cell);
+/// - rules carry no text and produce no unit;
+/// - footnote bodies follow the document's blocks, in footnote order.
+///
+/// The renderer's traversal mirrors this order exactly; the GUI smoke
+/// suite asserts the two stay in lockstep.
+pub fn text_units(doc: &Document) -> Vec<String> {
+    fn collect(blocks: &[Block], doc: &Document, out: &mut Vec<String>) {
+        for block in blocks {
+            match block {
+                Block::Heading { inlines, .. } | Block::Paragraph(inlines) => {
+                    out.push(walk_inlines(inlines, doc, None).text);
+                }
+                Block::Code { text, .. } => out.push(text.clone()),
+                Block::Quote { blocks, .. } => collect(blocks, doc, out),
+                Block::List { items, .. } => {
+                    for item in items {
+                        collect(&item.blocks, doc, out);
+                    }
+                }
+                Block::Table { head, rows, .. } => {
+                    for row in head.iter().chain(rows.iter()) {
+                        for cell in row {
+                            out.push(walk_inlines(cell, doc, None).text);
+                        }
+                    }
+                }
+                Block::Rule => {}
+            }
+        }
+    }
+    let mut units = Vec::new();
+    collect(&doc.blocks, doc, &mut units);
+    for footnote in &doc.footnotes {
+        collect(&footnote.blocks, doc, &mut units);
+    }
+    units
+}
+
 /// Plain-text dump of the whole document for snapshot tests and fuzz oracles.
 pub fn document_text(doc: &Document) -> String {
     let mut out = blocks_text(&doc.blocks, doc);

@@ -27,6 +27,20 @@ fuzz_target!(|data: &[u8]| {
             m.end <= entry_len,
             "match {m:?} out of bounds for length {entry_len}"
         );
+        // The entry a match points at must actually contain the needle
+        // (folded the same way find folds), or the index's decomposition
+        // and the highlight offsets have drifted apart.
+        let fold = |c: char| c.to_lowercase().next().unwrap_or(c);
+        let needle_folded: String = needle.chars().map(fold).collect();
+        let entry_folded: String = index
+            .entries
+            .get(m.entry)
+            .map(|e| e.chars().map(fold).collect())
+            .unwrap_or_default();
+        assert!(
+            entry_folded.contains(&needle_folded),
+            "match {m:?} points at entry without the needle: {entry_folded:?}"
+        );
     }
 
     let active = matches.first().map(|m| m.start..m.end);

@@ -114,6 +114,29 @@ fn walk_all_blocks<'a>(blocks: &'a [Block], out: &mut Vec<&'a Block>) {
     }
 }
 
+/// Independent count of the document's text units (one per rendered label:
+/// paragraphs, headings, code, per table cell) used to cross-check
+/// [`marksight::markup::text_units`].
+fn count_units(blocks: &[Block]) -> usize {
+    let mut count = 0;
+    for block in blocks {
+        match block {
+            Block::Heading { .. } | Block::Paragraph(_) | Block::Code { .. } => count += 1,
+            Block::Quote { blocks, .. } => count += count_units(blocks),
+            Block::List { items, .. } => {
+                for item in items {
+                    count += count_units(&item.blocks);
+                }
+            }
+            Block::Table { head, rows, .. } => {
+                count += head.iter().chain(rows.iter()).map(Vec::len).sum::<usize>();
+            }
+            Block::Rule => {}
+        }
+    }
+    count
+}
+
 fn assert_well_formed_block(
     block: &Block,
     doc: &Document,
@@ -213,16 +236,33 @@ proptest! {
     }
 
     #[test]
-    fn index_entries_match_block_text(markdown in arb_markdown()) {
+    fn index_units_match_an_independent_leaf_walk(markdown in arb_markdown()) {
         let doc = doc::parse(&markdown);
         let index = find::TextIndex::build(&doc);
-        let expected: Vec<String> = doc
-            .blocks
-            .iter()
-            .chain(doc.footnotes.iter().flat_map(|f| f.blocks.iter()))
-            .map(|b| markup::block_text(b, &doc))
-            .collect();
-        prop_assert_eq!(index.entries, expected);
+        let count = |blocks: &[Block]| count_units(blocks);
+        let expected: usize = count(&doc.blocks)
+            + doc.footnotes.iter().map(|f| count(&f.blocks)).sum::<usize>();
+        prop_assert_eq!(index.entries.len(), expected);
+    }
+
+    #[test]
+    fn matches_point_at_entries_containing_the_needle(markdown in arb_markdown(), needle in plain()) {
+        let doc = doc::parse(&markdown);
+        let index = find::TextIndex::build(&doc);
+        let matches = find::find(&index, &needle);
+        let fold = |c: char| c.to_lowercase().next().unwrap_or(c);
+        let needle: String = needle.chars().map(fold).collect();
+        for m in &matches {
+            let entry = index
+                .entries
+                .get(m.entry)
+                .unwrap_or_else(|| panic!("match {m:?} past the index"));
+            let folded: String = entry.chars().map(fold).collect();
+            prop_assert!(
+                folded.contains(&needle),
+                "match {m:?} points at entry {entry:?} which lacks the needle"
+            );
+        }
     }
 
     #[test]

@@ -1240,9 +1240,11 @@ fn apply_doc(app: &Rc<App>, path: &Path, parsed: Document) {
         }
         let (doc, rendered) = renderer.finish();
         timing::mark("render-complete");
-        let index = TextIndex {
-            entries: rendered.groups.iter().map(|g| g.text(&doc)).collect(),
-        };
+        // The same pure decomposition the tests and fuzz targets exercise
+        // (markup::text_units): the renderer creates one label group per
+        // unit, in this exact order — the GUI smoke suite asserts the two
+        // stay in lockstep, so a match's entry points at its label.
+        let index = TextIndex::build(&doc);
         {
             let mut state = stream_app.state.borrow_mut();
             state.doc = doc;

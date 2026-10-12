@@ -59,6 +59,7 @@ fn gui_smoke_suite() {
     search_finds_and_cycles(&mv);
     search_clears_highlights(&mv);
     unknown_anchor_link_is_handled_without_launching(&mv);
+    search_inside_every_structure(&mv);
     scroll_targets_move_viewport(&mv);
     pathological_documents_do_not_crash(&mv);
     image_keeps_space_in_tall_document(&mv);
@@ -178,6 +179,83 @@ fn search_clears_highlights(mv: &std::rc::Rc<app::App>) {
     mv.search_set("");
     pump_until(Duration::from_secs(2), || mv.search_counter().is_empty());
     assert!(mv.search_counter().is_empty());
+}
+
+fn search_inside_every_structure(mv: &std::rc::Rc<app::App>) {
+    // The shipped index and the tested index (markup::text_units) must be
+    // the same decomposition: one entry per rendered label. Searching for
+    // a needle that occurs inside exactly one structure must highlight
+    // exactly one label, and that label must contain the needle — no
+    // phantom matches from misaligned entries.
+    let markdown = "\
+- list item with unitlist inside
+
+| cell one | unittable in a cell |
+|---|---|
+| x | y |
+
+> a quote holding unitquote
+
+> [!NOTE]
+> an alert carrying unitalert
+
+paragraph referencing unitnote[^f]
+
+```rust
+// code block with unitcode
+```
+
+# heading containing unithead
+
+[^f]: the footnote defines unitfootnote
+";
+    let path = std::env::temp_dir().join("marksight-smoke-structures.md");
+    std::fs::write(&path, markdown).unwrap();
+    mv.open_path(&path);
+    assert!(
+        pump_until(Duration::from_secs(5), || mv.visible_page() == "doc"
+            && mv.rendering_complete()),
+        "structures document never finished rendering"
+    );
+    let doc = marksight::doc::parse(markdown);
+    assert_eq!(
+        mv.label_group_count(),
+        marksight::markup::text_units(&doc).len(),
+        "label groups must mirror the find index's text units one to one"
+    );
+
+    for needle in [
+        "unitlist",
+        "unittable",
+        "unitquote",
+        "unitalert",
+        "unitcode",
+        "unithead",
+        "unitfootnote",
+        "unitnote",
+    ] {
+        mv.search_set(needle);
+        // Wait for the highlight itself, not the counter: consecutive
+        // needles all report 1/1, so the counter alone cannot show that
+        // this needle's search has actually run.
+        let landed = pump_until(Duration::from_secs(2), || {
+            let highlighted = mv.debug_label_states();
+            highlighted.len() == 1 && strip_tags(&highlighted[0]).to_lowercase().contains(needle)
+        });
+        let highlighted = mv.debug_label_states();
+        assert!(
+            landed,
+            "needle {needle} should highlight exactly one label containing it, got {highlighted:?}"
+        );
+        assert_eq!(
+            mv.search_counter(),
+            "1/1",
+            "needle {needle} should have exactly one hit"
+        );
+    }
+    mv.search_set("");
+    pump(Duration::from_millis(200));
+    let _ = std::fs::remove_file(&path);
 }
 
 fn unknown_anchor_link_is_handled_without_launching(mv: &std::rc::Rc<app::App>) {

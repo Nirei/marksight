@@ -41,15 +41,6 @@ pub enum Source {
     Code(Rc<str>),
 }
 
-impl LabelGroup {
-    pub fn text(&self, doc: &Document) -> String {
-        match &self.source {
-            Source::Inlines(inlines) => markup::walk_inlines(inlines, doc, None).text,
-            Source::Code(code) => code.to_string(),
-        }
-    }
-}
-
 struct LabelSlot {
     label: gtk::Label,
     segment: usize,

@@ -1,13 +1,16 @@
-//! Find layer: a flat per-block text index with case-insensitive search.
+//! Find layer: a flat per-unit text index with case-insensitive search.
 //!
-//! The index is built from [`crate::markup::block_text`], so its character
-//! offsets are exactly the offsets the markup walker understands. Entries are
-//! the document's top-level blocks followed by each footnote's blocks.
+//! The index is [`crate::markup::text_units`] — one entry per rendered
+//! label, in render order (paragraphs, headings and code blocks anywhere in
+//! the tree, one entry per table cell, footnote bodies last). The shipped
+//! index and the index these tests exercise are built by the same function,
+//! and its character offsets are exactly the offsets the markup walker
+//! understands.
 
 use std::ops::Range;
 
 use crate::doc::Document;
-use crate::markup::block_text;
+use crate::markup::text_units;
 
 #[derive(Clone, Debug, Default)]
 pub struct TextIndex {
@@ -23,11 +26,9 @@ pub struct Match {
 
 impl TextIndex {
     pub fn build(doc: &Document) -> Self {
-        let mut entries: Vec<String> = doc.blocks.iter().map(|b| block_text(b, doc)).collect();
-        for footnote in &doc.footnotes {
-            entries.extend(footnote.blocks.iter().map(|b| block_text(b, doc)));
+        TextIndex {
+            entries: text_units(doc),
         }
-        TextIndex { entries }
     }
 
     pub fn len(&self) -> usize {
@@ -115,14 +116,20 @@ mod tests {
     }
 
     #[test]
-    fn index_covers_blocks_then_footnotes() {
-        let idx = index("# head\n\npara\n\n> quote\n\ntext[^n]\n\n[^n]: note");
-        assert_eq!(idx.len(), 5);
-        assert_eq!(idx.entries[0], "head");
-        assert_eq!(idx.entries[1], "para");
-        assert_eq!(idx.entries[2], "quote");
-        assert_eq!(idx.entries[3], "text1");
-        assert_eq!(idx.entries[4], "note");
+    fn index_covers_one_entry_per_rendered_label() {
+        // One entry per rendered label, in render order: list items and
+        // table cells are separate entries (they are separate labels),
+        // while a quote's inner paragraph is its own entry too. Footnote
+        // bodies follow the document blocks.
+        let idx = index(
+            "# head\n\n- one\n- two\n\n| a | needle |\n|---|---|\n| c | d |\n\n> quoted\n\ntext[^n]\n\n[^n]: note",
+        );
+        assert_eq!(
+            idx.entries,
+            vec![
+                "head", "one", "two", "a", "needle", "c", "d", "quoted", "text1", "note"
+            ]
+        );
     }
 
     #[test]
