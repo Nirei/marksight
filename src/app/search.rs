@@ -11,6 +11,7 @@ use gtk::prelude::*;
 use super::App;
 use super::links::scroll_to;
 use crate::find;
+use crate::i18n::ngettext;
 use crate::render;
 
 const FIND_DEBOUNCE: Duration = Duration::from_millis(120);
@@ -87,6 +88,26 @@ fn present_matches(app: &Rc<App>, active: Option<usize>) {
         )
     };
     app.ui.match_counter.set_text(&counter);
+    // GTK4 has no live regions, so the worded count rides on the entry's
+    // accessible description: screen readers announce it when focus is on
+    // the entry. The visible counter stays symbol-only (n/m) and needs no
+    // translation.
+    let spoken = if state.find_needle.trim().is_empty() {
+        String::new()
+    } else {
+        let position = active.map(|a| a + 1).unwrap_or(0);
+        let total = state.matches.len();
+        ngettext(
+            "{position} of {total} match",
+            "{position} of {total} matches",
+            u32::try_from(total).unwrap_or(u32::MAX),
+        )
+        .replace("{position}", &position.to_string())
+        .replace("{total}", &total.to_string())
+    };
+    app.ui
+        .search_entry
+        .update_property(&[gtk::accessible::Property::Description(&spoken)]);
     let scroll_target = active
         .and_then(|a| state.matches.get(a))
         .and_then(|m| rendered.first_label(m.entry).cloned());
