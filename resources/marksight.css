@@ -3,6 +3,10 @@
  * Only theme-defined named colors and relative sizes are used, so any
  * installed GTK theme (Mint-Y, Adwaita, …) restyles the app with zero
  * per-theme work. No literal colors appear here.
+ *
+ * GTK CSS knows physical sides only (no margin-start or border-inline-*),
+ * so every rule that pins a left/right side is mirrored with a :dir(rtl)
+ * twin for right-to-left locales.
  */
 
 .mv-content {
@@ -70,6 +74,11 @@
     padding: 8px 12px;
 }
 
+.mv-quote:dir(rtl) {
+    border-left-width: 0;
+    border-right: 3px solid alpha(@theme_fg_color, 0.3);
+}
+
 .mv-alert {
     border-radius: 8px;
     padding: 10px 14px;
@@ -86,9 +95,19 @@
     background-color: alpha(@theme_selected_bg_color, 0.08);
 }
 
+.mv-alert-note:dir(rtl) {
+    border-left-width: 0;
+    border-right: 4px solid @theme_selected_bg_color;
+}
+
 .mv-alert-tip {
     border-left: 4px solid @success_color;
     background-color: alpha(@success_color, 0.10);
+}
+
+.mv-alert-tip:dir(rtl) {
+    border-left-width: 0;
+    border-right: 4px solid @success_color;
 }
 
 .mv-alert-important {
@@ -96,14 +115,29 @@
     background-color: alpha(@warning_color, 0.10);
 }
 
+.mv-alert-important:dir(rtl) {
+    border-left-width: 0;
+    border-right: 4px solid @warning_color;
+}
+
 .mv-alert-warning {
     border-left: 4px solid @warning_color;
     background-color: alpha(@warning_color, 0.14);
 }
 
+.mv-alert-warning:dir(rtl) {
+    border-left-width: 0;
+    border-right: 4px solid @warning_color;
+}
+
 .mv-alert-caution {
     border-left: 4px solid @error_color;
     background-color: alpha(@error_color, 0.10);
+}
+
+.mv-alert-caution:dir(rtl) {
+    border-left-width: 0;
+    border-right: 4px solid @error_color;
 }
 
 .mv-list {
@@ -113,6 +147,11 @@
 
 .mv-list-nested {
     margin-left: 18px;
+}
+
+.mv-list-nested:dir(rtl) {
+    margin-left: 0;
+    margin-right: 18px;
 }
 
 .mv-list-marker {
@@ -157,6 +196,11 @@
 
 .mv-toc-column {
     border-right: 1px solid @borders;
+}
+
+.mv-toc-column:dir(rtl) {
+    border-right-width: 0;
+    border-left: 1px solid @borders;
 }
 
 .mv-toc {
