@@ -174,6 +174,12 @@ fn build(app: &gtk::Application) -> Rc<App> {
         .icon_name("open-menu-symbolic")
         .menu_model(&menu)
         .build();
+    // Icon-only, so it needs an explicit name for assistive technology;
+    // GTK does not derive a meaningful one from the icon.
+    menu_button.set_tooltip_text(Some(&gettext("Open the main menu")));
+    menu_button.update_property(&[gtk::accessible::Property::Label(&gettext(
+        "Main menu",
+    ))]);
 
     let title_label = gtk::Label::new(Some("marksight"));
     title_label.set_css_classes(&["mv-title"]);

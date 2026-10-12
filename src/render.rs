@@ -433,9 +433,16 @@ fn render_block(
         Block::Heading { level, id, inlines } => {
             let css = format!("mv-h{level}");
             let widget = render_inlines(inlines, &["mv-para", &css], ctx, groups);
-            widget.update_property(&[gtk::accessible::Property::Label(
-                &markup::walk_inlines(inlines, ctx.doc, None).text,
-            )]);
+            // Label carries the heading text; Level tells assistive
+            // technology the outline depth. GTK fixes a widget's role at
+            // instantiation, so Level is the strongest heading signal an
+            // app can attach to a plain label.
+            widget.update_property(&[
+                gtk::accessible::Property::Label(
+                    &markup::walk_inlines(inlines, ctx.doc, None).text,
+                ),
+                gtk::accessible::Property::Level(i32::from(*level)),
+            ]);
             if let Some(id) = id {
                 ctx.anchors.borrow_mut().insert(id.clone(), widget.clone());
             }
